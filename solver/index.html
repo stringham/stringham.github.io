@@ -19,19 +19,16 @@
 		<script type='text/javascript' src='js/lib/en_US.js'> </script>
 		<link href='css/jquery.qtip.css' rel='stylesheet'>
 		<link href='css/style.css' rel='stylesheet'>
-		<script type="text/javascript">
+		<!-- Global site tag (gtag.js) - Google Analytics -->
+		<script async src="https://www.googletagmanager.com/gtag/js?id=UA-33833540-1"></script>
+		<script>
+		window.dataLayer = window.dataLayer || [];
+		function gtag(){dataLayer.push(arguments);}
+		gtag('js', new Date());
 
-		  var _gaq = _gaq || [];
-		  _gaq.push(['_setAccount', 'UA-33833540-1']);
-		  _gaq.push(['_trackPageview']);
-
-		  (function() {
-		    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-		    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-		    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
-		  })();
-
+		gtag('config', 'UA-33833540-1');
 		</script>
+
 	</head>
 
 	<body bgcolor='#CDD2D8'>
@@ -59,7 +56,7 @@
 					<label for='fill-row'>Row</label>
 					<input id='fill-col' type='checkbox' name='fill-option' value='column' >
 					<label for='fill-col'>Column</label>
-				</fieldset> 
+				</fieldset>
 			</div>
 		</div>
 	</body>

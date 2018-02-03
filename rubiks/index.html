@@ -11,17 +11,15 @@
 
 	<link href="http://fonts.googleapis.com/css?family=Source+Sans Pro:200italic,200,300italic,300,400italic,400,600italic,600,700italic,700,900italic,900" rel="stylesheet" type="text/css">
 
-	<script type="text/javascript">
-	  var _gaq = _gaq || [];
-	  _gaq.push(['_setAccount', 'UA-33833540-1']);
-	  _gaq.push(['_trackPageview']);
-	  (function() {
-	    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-	    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-	    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
-	  })();
+	<!-- Global site tag (gtag.js) - Google Analytics -->
+	<script async src="https://www.googletagmanager.com/gtag/js?id=UA-33833540-1"></script>
+	<script>
+	window.dataLayer = window.dataLayer || [];
+	function gtag(){dataLayer.push(arguments);}
+	gtag('js', new Date());
+
+	gtag('config', 'UA-33833540-1');
 	</script>
-	
 
 </head>
 <body>
@@ -48,7 +46,7 @@
 	</div>
 	</div>
 	<section style='position:relative;'>
-		<canvas id="cube" style='position:absolute;left:15px;top:15px;'>HTML5 CANVAS</canvas> 
+		<canvas id="cube" style='position:absolute;left:15px;top:15px;'>HTML5 CANVAS</canvas>
 		<div id='controls'></div>
 		<div id='flat-cube'></div>
 	</section>
@@ -63,18 +61,18 @@ var flatCube, controls;
 /**********************************
  * Main Loop
  **********************************/
-var run = function () { 
+var run = function () {
 	cube.tick();
 	cube.render();
 	if(cube2){
 		cube2.tick();
 		cube2.render();
 	}
-	// ---- animation loop ---- 
+	// ---- animation loop ----
 	requestAnimationFrame(run);
-} 
+}
 var oldWidth = null;
-var reset = function () { 
+var reset = function () {
 	var down = false;
 	var parent = document.getElementById('cube').parentElement;
 	var width = Math.min(parent.offsetWidth/2-30, parent.offsetHeight/5*3);
@@ -93,15 +91,15 @@ var reset = function () {
 
 	cube.flatCube = flatCube;
 	flatCube.cube = cube;
-}; 
+};
 
-var init = function () { 
-	reset(); 
-	run(); 
-} 
-	
-window.addEventListener('load', function () { 
-	init(); 
+var init = function () {
+	reset();
+	run();
+}
+
+window.addEventListener('load', function () {
+	init();
 	var logo = new Logo(document.getElementById('logo'), 60);
 	logo.color = '#007fff';
 	document.getElementsByClassName('accent-color')[0].style.color='#007fff';
