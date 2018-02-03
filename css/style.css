@@ -49,6 +49,10 @@ body {
 	text-decoration: none;
 }
 
+.header h1 a:hover {
+	text-decoration: none;
+}
+
 .header .logo-container {
 	display: inline-block;
 	margin-top: 10px;
