@@ -1,0 +1,119 @@
+<html>
+<head>
+	<title>Rubik's Cube</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+	<script type="text/javascript" src='js/rubiks.js'></script>
+	<script type="text/javascript" src='js/solver.js'></script>
+	<script type="text/javascript" src='js/flat.js'></script>
+	<style type="text/css">
+	body{
+		background:#fafafa;
+	}
+	</style>
+</head>
+<body>
+<canvas id="canvas" style='position:absolute;left:15px;top:15px;'>HTML5 CANVAS</canvas> 
+<div id='flat-cube'></div>
+
+<script type="text/javascript">
+
+var cube, cube2;
+var flatCube, controls;
+
+/**********************************
+ * Main Loop
+ **********************************/
+var run = function () { 
+	cube.tick();
+	cube.render();
+	if(cube2){
+		cube2.tick();
+		cube2.render();
+	}
+	// ---- animation loop ---- 
+	requestAnimationFrame(run);
+} 
+var reset = function () { 
+	var down = false;
+	var width = Math.min(window.innerWidth/2-30, window.innerHeight/5*3);
+	console.log(width);
+	if(width < 250){
+		width = window.innerWidth/2-30;
+	}
+	if(width < 250){
+		width = window.innerWidth - 30;
+		down = true;
+	}
+	cube = new RubiksCube('canvas', width);
+	flatCube = new FlatCube('flat-cube', width, down);
+	controls = new RubiksCubeControls(cube, width, document.body);
+
+	cube.flatCube = flatCube;
+	flatCube.cube = cube;
+}; 
+
+var init = function () { 
+	reset(); 
+	run(); 
+} 
+	
+window.addEventListener('load', function () { 
+	init(); 
+	function loop(){
+		if(cube.rotating){
+			setTimeout(loop,3000);
+			return;
+		}
+		scramble(20);
+		solve();
+		loop();
+	}
+	// loop();
+}, false);
+var oldWidth = null;
+window.addEventListener('resize', function(){
+	var down = false;
+	var width = Math.min(window.innerWidth/2-30, window.innerHeight/5*3);
+	if(width < 250){
+		width = window.innerWidth/2-30;
+	}
+	if(width < 250){
+		width = window.innerWidth - 30;
+		down = true;
+	}
+	if(width == oldWidth){
+		return;
+	}
+	oldWidth = width;
+	cube.updateSize(width);
+	controls.setWidth(width);
+	flatCube = new FlatCube('flat-cube', width, down);
+	cube.flatCube = flatCube;
+	flatCube.cube = cube;
+	cube.update();
+	flatCube.update();
+});
+
+var shift = function(){
+	// cube.cx += 3*(Math.random()-1);
+	// cube.cy += 3*(Math.random()-1);
+	// cube.cz += 3*(Math.random()-1);
+	xAutorotate = Math.random()/100;
+	yAutorotate = Math.random()/100;
+}
+
+var solve = function(){
+	var solver = new RubiksCubeSolver();
+	if(cube.rotating){
+		setTimeout(solve, 100);
+		return;
+	}
+	shift();
+	cube.makeMoves(solver.solve(cube.getState()));
+	if(cube2)
+		cube2.makeMoves(solver.solve(cube2.getState()));
+};
+</script>
+
+
+</html>

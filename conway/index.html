@@ -1,0 +1,171 @@
+<html>
+<head>
+	<title>Conway's Game of Life with Images</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+
+	<script type="text/javascript" src='js/conway.js'></script>
+	<script type="text/javascript" src='../js/logo.js'></script>
+	<link rel="stylesheet" type="text/css" href="../css/style.css">
+	<style type="text/css">
+		#canvas {
+			width: 90%;
+			display: inline-block;
+			margin-top: 20px;
+			margin-bottom: 15px;
+		}
+
+		#main {
+			text-align: center;
+		}
+
+		.choice {
+			display: inline-block;
+			margin: 5px;
+			width: 55px;
+			height: 55px;
+			cursor: pointer;
+		}
+
+		.choice img {
+			width: 100%;
+			height: 100%;
+		}
+
+		.paragraph{
+			text-align: left;
+			margin: 10px;
+			color: #007fff;
+		}
+		#options {
+			margin-bottom: 40px;
+		}
+
+		.alive-option {
+			display: inline-block;
+			margin-left: 2%;
+			height: 25px;
+			border: 1px solid #007fff;
+			line-height: 25px;
+			padding: 0 5px;
+			color:#007fff;
+			cursor: pointer;
+		}
+
+		.alive-option.selected{
+			background-color: #007fff;
+			color:#ffffff;
+		}
+
+		.alive {
+			margin-bottom: 10px;
+		}
+
+		.header-text {
+			color: #007fff;
+			font-weight: bold;
+			font-size: 40px;
+			margin-top:10px;
+		}
+	</style>
+
+	<link href="http://fonts.googleapis.com/css?family=Source+Sans Pro:200italic,200,300italic,300,400italic,400,600italic,600,700italic,700,900italic,900" rel="stylesheet" type="text/css">
+
+	<script type="text/javascript">
+	  var _gaq = _gaq || [];
+	  _gaq.push(['_setAccount', 'UA-33833540-1']);
+	  _gaq.push(['_trackPageview']);
+	  (function() {
+	    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+	    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+	    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+	  })();
+	</script>
+
+
+</head>
+<body>
+<div class='content'>
+	<div class='header'>
+		<div class='logo-container'>
+			<canvas id='logo' width='60' height='60'></canvas>
+		</div>
+		<h1>
+			<span class='light-blue'>ryan</span><span class='accent-color'>stringham</span>
+		</h1>
+	<div class='nav'>
+		<ul>
+			<a href='/#home'>
+				<li class='nav-home'>home</li>
+			</a>
+			<a href='/#projects'>
+				<li class='nav-projects'>projects</li>
+			</a>
+			<a href='/#about'>
+				<li class='nav-about'>about</li>
+			</a>
+		</ul>
+	</div>
+	</div>
+	<section style='position:relative;' id="main">
+    <h1 class="header-text">Conway's Game of Life</h1>
+    <canvas id='canvas' width='320' height='320'></canvas>
+    <div class="alive">
+    	<div class="alive-option" id="red">Red</div>
+    	<div class="alive-option" id="green">Green</div>
+    	<div class="alive-option" id="blue">Blue</div>
+    	<div class="alive-option" id="half">Half</div>
+    	<div class="alive-option" id="third">Third</div>
+    	<div class="alive-option" id="fourth">Fourth</div>
+    </div>
+    <input type="text" placeholder="image url" id="custom">
+    <button id="custom-button">Use Custom</button>
+    <div id="options">
+    </div>
+    <h1 class="header-text">Description</h1>
+    <div class="paragraph">
+	    Conway's Game of Life is a cellular automaton devised by the British mathematician John Horton Conway in 1970. After the initial configuration has been created the rules are followed and one observes how it evolves.
+    </div>
+    <div class="paragraph">
+    	The Game of Life is composed of a grid of square cells, each of which is in one of two possible states, <i>alive</i> or <i>dead</i>. Every cell interacts with its eight neighbors, which are the cells that are horizontally, vertically, or diagonally adjacent. At each step in time the following transitions occur:
+    	<ol style="margin-left:40px;margin-top:10px;">
+    		<li>1. Any live cell with fewer than two living neighbors dies, as if caused by under-population</li>
+    		<li>2. Any live cell with two or three live neighbors lives on to the next generation.</li>
+    		<li>3. Any live cell with more than three live neighbors dies, as if by overcrowding.</li>
+    		<li>4. Any dead cell with exactly three live neighbors becomes a live cell, as if by reproduction.</li>
+		</ol>
+    </div>
+    <div class="paragraph">
+    	Usually, live cells are colored and dead cells are white, making it easy to see what the current state of the game is. This application uses an image is the initial state of the game and uses different rules to determine if a cell (or pixel) is alive or dead.
+    </div>
+    <div class="paragraph">
+    	Each pixel's color is represented by three numbers representing the red, green, and blue components, using the <a style="color:#085dad;" href="http://en.wikipedia.org/wiki/RGB_color_model#Numeric_representations">RGB color model</a> each component ranges from 0 to 255.
+    </div>
+    <div class="paragraph">
+    	There are many ways we can choose to determine if a pixel is alive or dead. For example, we could call a pixel alive if one of the components is above an arbitrary number. We could say any pixel that has a red component above 200 is alive. This makes an easy visual representation of the cells with more red are alive. Or we could call a pixel alive if one of the components is divisible by a specific number. This looks more arbitrary, but causes more interesting animations when the game of life is simulated.
+    </div>
+    <div class="paragraph">
+	    To make the animation look smooth when simulated I look for a neighbor that is in the state a cell is changing to. When a cell is dying it takes the color if a dead neighbor, and when a cell is being born it takes the color of a live neighbor. If there are no such neighbors then I break the rule and don't change the pixel's state that round.
+    </div>
+    <div class="paragraph">
+    	You can start and stop the simulation by clicking on the big picture. When you select a small picture it will auto start the simulation. You can also supply your own picture by entering a url and pressing the "Use Custom" button.
+    </div>
+	</section>
+</div>
+
+
+
+
+<script type="text/javascript">
+	window.addEventListener('load', function () {
+		var logo = new Logo(document.getElementById('logo'), 60);
+		logo.color = '#007fff';
+		document.getElementsByClassName('accent-color')[0].style.color='#007fff';
+		logo.animate();
+		document.getElementById('logo').addEventListener('click', function(){
+			logo.animate();
+		});
+	}, false);
+</script>
+
+
+</html>

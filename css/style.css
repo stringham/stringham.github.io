@@ -1,0 +1,309 @@
+/* Eric Meyer's Reset CSS v2.0 - http://cssreset.com */
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td,article,aside,canvas,details,embed,figure,figcaption,footer,header,hgroup,menu,nav,output,ruby,section,summary,time,mark,audio,video{border:0;font-size:100%;font:inherit;vertical-align:baseline;margin:0;padding:0}article,aside,details,figcaption,figure,footer,header,hgroup,menu,nav,section{display:block}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:none}table{border-collapse:collapse;border-spacing:0}
+
+
+body {
+	background-color: #fafafa;
+	font-family: 'Source Sans Pro';
+}
+
+.load {
+	position: fixed;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	background-color: white;
+	z-index: 1;
+}
+
+.light-blue {
+	color:#60dcfb;
+}
+
+.accent-color {
+	color:#085dad;
+}
+
+.header {
+	position: relative;
+	/*height: 70px;*/
+	width:100%;
+	/*border-bottom: 2px solid #085dad;*/
+}
+
+.content {
+	margin: auto;
+	max-width: 700px;
+}
+
+.header h1 {
+	float: left;
+	height: 70px;
+	line-height: 70px;
+	font-size: 60px;
+	margin-left: 10px;
+}
+
+.header .logo-container {
+	display: inline-block;
+	margin-top: 10px;
+	float: left;
+	margin-left: 10px;
+}
+
+.picture {
+	background-image: url('../img/ryan.jpg');
+	background-size: contain;
+	width:210px;
+	height: 210px;
+	border-radius: 50%;
+	margin:auto;
+	margin-top: 50px;
+}
+
+.nav {
+	width: 100%;
+	display: block;
+	height: 25px;
+	clear: both;
+}
+
+.nav li {
+	float: left;
+	text-align: center;
+	line-height: 25px;
+	display: inline-block;
+	color: #fafafa;
+}
+
+.nav-home{
+	width: 33%;
+	background-color: #085dad;
+}
+
+.nav-projects{
+	width: 34%;
+	background-color: #007fff;
+}
+
+.nav-about{
+	width: 33%;
+	background-color: #66b2ff;
+}
+
+section {
+	height: 100%;
+}
+
+#s-home {
+}
+
+#s-home p {
+	text-align: center;
+	font-size: 37px;
+}
+
+#s-home a {
+	text-decoration: none;
+}
+
+#s-home .email {
+	display: inline-block;
+	width: 100%;
+	margin-top: 50px;
+}
+
+#s-projects {
+	display: none;
+}
+
+#s-projects h1 {
+	text-align: center;
+	color: #007fff;
+	font-size: 30px;
+	margin-top: 5%;
+}
+
+#s-projects .project .name {
+	text-align: center;
+	font-size: 22px;
+	color: #007fff;
+	margin-bottom: 6px;
+}
+
+#s-projects .project {
+	width: auto;
+	max-width: 250px;
+	margin: 5% auto;
+}
+
+#s-projects .project img {
+	width: 100%;
+}
+
+#s-about {
+	display: none;
+}
+
+
+#s-about h1 {
+	text-align: center;
+	color: #007fff;
+	font-size: 30px;
+	margin-top: 5%;
+	margin-bottom: 2%;
+}
+
+#s-about article {
+	clear: both;
+}
+
+#s-about .image {
+	width: 280px;
+	height: 280px;
+	margin:35px;
+}
+
+#s-about .circle {
+	border-radius: 50%;
+}
+
+#s-about article > div {
+	width: 330px;
+	height: 330px;
+	margin: 10px;
+	position: relative;
+}
+
+#s-about article > div > div{
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	margin:auto;
+	text-align: center;
+	display: table;
+	color: #007fff;
+	font-size: 23px;
+}
+
+#s-about .img-right {
+
+}
+
+#s-about .img-right .image{
+	float:right;
+}
+
+#s-about .img-right > div{
+	float:right;
+}
+
+#s-about .img-left .image{
+	float: left;
+}
+
+#s-about .img-left > div{
+	float: left;
+}
+
+
+#twitter {
+	fill:#085dad;
+}
+
+#github {
+	fill:#007fff;
+}
+
+#linkedin {
+	fill:#66b2ff;
+}
+
+.social {
+	text-align: center;
+	margin-top: 50px;
+}
+
+.social li {
+	float: left;
+	width: 33%;
+}
+
+.social li:last-child {
+	width: 34%;
+}
+
+@media only screen and (max-width: 699px) {
+	#s-about .image {
+		width: 230px;
+		height: 230px;
+	}
+
+	#s-about article > div {
+		width: 280px;
+		height: 280px;
+		margin: 10px;
+	}
+}
+
+@media only screen and (max-width: 610px) {
+	#s-about .image {
+		width: 180px;
+		height: 180px;
+	}
+
+	#s-about article > div {
+		width: 200px;
+		height: 200px;
+		margin: 10px;
+	}
+}
+
+@media only screen and (max-width: 474px) {
+	.header h1 {
+		font-size: 50px;
+	}
+
+	#s-about .img-right .image{
+		width: 180px;
+		height: 180px;
+		clear: both;
+		float: none;
+		margin-bottom: 15px;
+	}
+
+	#s-about .img-left .image{
+		width: 180px;
+		height: 180px;
+		clear: both;
+		float: none;
+		margin-bottom: 15px;
+	}
+
+	#s-about .img-right,.img-left {
+		margin: auto;
+		width: 250px;
+	}
+
+	#s-about article > div {
+		width: 230px;
+		height: auto;
+	}
+	#s-about article > div > div{
+		position: relative;
+	}
+
+}
+
+@media only screen and (max-width: 400px) {
+	.header h1 {
+		font-size: 42px;
+	}	
+}
+
+@media only screen and (max-width: 355px) {
+	.header h1 {
+		font-size: 32px;
+	}	
+}
