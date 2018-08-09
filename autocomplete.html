@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dev Tools Auto Complete</title>
+    <style>
+        code {
+            color:darkblue;
+        }
+
+    </style>
+    <script>
+        class Foo {
+            get value() {
+                return 3;
+            }
+        }
+
+        class Bar extends Foo {
+            constructor() {
+                super();
+                this.valueId = 1;
+            }
+        }
+
+        window.bar = new Bar();
+    </script>
+</head>
+<body>
+    <p>Open the dev tools, and in the console type:</p>
+    <code>bar.value</code>
+    <p>and press enter.</p>
+
+    <p>The code being loaded on this page is:</p>
+    <code>
+<pre>class Foo {
+    get value() {
+        return 3;
+    }
+}
+
+class Bar extends Foo {
+    constructor() {
+        super();
+        this.valueId = 1;
+    }
+}
+
+window.bar = new Bar();
+</pre>
+    </code>
+<p>In Chrome 68 autocomplete is actively selecting valueId and when you press enter it accepts that autocomplete:</p>
+<img src="https://i.imgur.com/WB3l5Ba.png">
+<p>This is a poor experience. If you have typed something that exactly matches something in the autocomplete dropdown, that item should be prioritized.</p>
+
+<p>Also, if you do type <code>bar.valueId</code> you have to press enter twice to get it to execute.</p>
+</body>
+</html>
