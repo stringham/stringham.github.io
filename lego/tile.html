@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Lego Tile</title>
+	<script>
+
+		document.addEventListener("DOMContentLoaded", draw);
+		function draw() {
+			var canvas = document.getElementById('canvas');
+			var size = 30;
+			canvas.width=26*size;
+			canvas.height=34*size;
+			var ctx = canvas.getContext('2d');
+			ctx.fillStyle = '#f78d1e';
+			ctx.fillRect(0,0,26*size,34*size);
+
+			var board = [];
+			for(var i=0; i<26; i++) {
+				var row = [];
+				for(var j=0; j<34; j++) {
+					row.push({x:i,y:j,w:1,h:1});
+				}
+				board.push(row);
+			}
+
+			for(var i=0; i<26; i++) {
+				for(var j=0; j<34; j++) {
+					if(Math.random() < 0.5) {
+						if(Math.random() < 0.5) {
+							if(i < 25) {
+								board[i][j].w = 2;
+							}
+						} else {
+							if(j < 33) {
+								board[i][j].h = 2;
+							}
+						}
+					}
+				}
+			}
+
+			for(var i=0; i<26; i++) {
+				for(var j=0; j<34; j++) {
+					if((i == 0 || board[i-1][j].w == 1) && (j == 0 || board[i][j-1].h == 1)) {
+						ctx.strokeStyle = '#000000';
+						ctx.fillStyle = ['red','yellow','blue','green'][Math.floor(Math.random()*4)];
+						ctx.fillRect(i*size, j*size, size*board[i][j].w, size*board[i][j].h);
+						ctx.strokeRect(i*size, j*size, size*board[i][j].w, size*board[i][j].h);
+						for(var x = 0; x<board[i][j].w; x++) {
+							for(var y=0; y<board[i][j].h; y++) {
+								ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+								ctx.beginPath();
+								ctx.arc((i+x)*size + size*.25, (j+y)*size + size*.25, size*.125, 0, 2 * Math.PI, false);
+								ctx.stroke();
+								ctx.beginPath();
+								ctx.arc((i+x)*size + size*.75, (j+y)*size + size*.25, size*.125, 0, 2 * Math.PI, false);
+								ctx.stroke();
+								ctx.beginPath();
+								ctx.arc((i+x)*size + size*.75, (j+y)*size + size*.75, size*.125, 0, 2 * Math.PI, false);
+								ctx.stroke();
+								ctx.beginPath();
+								ctx.arc((i+x)*size + size*.25, (j+y)*size + size*.75, size*.125, 0, 2 * Math.PI, false);
+								ctx.stroke();
+							}
+						}
+					} else {
+						board[i][j] = {x:i,y:j,w:1,h:1};
+					}
+				}
+			}
+		}
+	</script>
+</head>
+<body>
+<canvas onclick="draw()" id="canvas"></canvas>
+</body>
+</html>

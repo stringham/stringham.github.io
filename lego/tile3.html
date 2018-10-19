@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Lego Tile</title>
+	<script>
+
+		document.addEventListener("DOMContentLoaded", draw.bind(window, 0));
+		function draw(num) {
+			var allColors = ['red','blue','green','yellow'];
+			var counts = {};
+			allColors.forEach(function(color){
+				counts[color] = {
+					'big': 0,
+					'small': 0,
+				};
+			});
+			var width = parseInt(document.getElementById('width').value,10) || 26;
+			var height = parseInt(document.getElementById('height').value,10) || 34;
+			var fail = false;
+			var canvas = document.getElementById('canvas');
+			var touchRatio = document.getElementById('touch').value/100;
+			var sizeRatio = document.getElementById('tilesize').value/100;
+			// canvas.style.border = '1px solid black';
+			var size = 30;
+			canvas.width=width*size+2;
+			canvas.height=height*size + width*3+2;
+			var ctx = canvas.getContext('2d');
+			ctx.fillStyle = '#f78d1e';
+			ctx.clearRect(0,0,width*size,height*size + size*3);
+			ctx.save();
+			ctx.translate(1,1);
+
+			var board = [];
+			var colors = [];
+			for(var i=0; i<width; i++) {
+				var row = [];
+				var cRow = [];
+				for(var j=0; j<height; j++) {
+					cRow.push('');
+					row.push({x:i,y:j,w:1,h:1});
+				}
+				colors.push(cRow);
+				board.push(row);
+			}
+
+			for(var i=0; i<width; i++) {
+				for(var j=0; j<height; j++) {
+					if(board[i][j] && Math.random() < sizeRatio) {
+						if(Math.random() < 0.5) {
+							if(i < width-1 && board[i+1][j]) {
+								board[i][j].w = 2;
+								board[i+1][j] = undefined;
+							} else if(j < height-1 && board[i][j+1]) {
+								board[i][j].h = 2;
+								board[i][j+1] = undefined;
+							}
+						} else {
+							if(j < height-1 && board[i][j+1]) {
+								board[i][j].h = 2;
+								board[i][j+1] = undefined;
+							} else if(i < width-1 && board[i+1][j]) {
+								board[i][j].w = 2;
+								board[i+1][j] = undefined;
+							}
+						}
+					}
+				}
+			}
+
+			function drawDots(x,y) {
+				ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+				ctx.beginPath();
+				ctx.arc(x + size*.25, y + size*.25, size*.125, 0, 2 * Math.PI, false);
+				ctx.stroke();
+				ctx.beginPath();
+				ctx.arc(x + size*.75, y + size*.25, size*.125, 0, 2 * Math.PI, false);
+				ctx.stroke();
+				ctx.beginPath();
+				ctx.arc(x + size*.75, y + size*.75, size*.125, 0, 2 * Math.PI, false);
+				ctx.stroke();
+				ctx.beginPath();
+				ctx.arc(x + size*.25, y + size*.75, size*.125, 0, 2 * Math.PI, false);
+				ctx.stroke();
+			}
+
+			function getSurroundingTiles(tile) {
+				var result = [];
+				var x = tile.x;
+				var y = tile.y;
+				if(x > 0) {//get the tile to the left
+					if(board[x-1][y]) {
+						result.push(board[x-1][y]);
+					} else if(y>0 && board[x-1][y-1] && board[x-1][y-1].h == 2) {
+						result.push(board[x-1][y-1]);
+					} else if(x > 1 && board[x-2][y] && board[x-2][y].w == 2) {
+						result.push(board[x-2][y]);
+					} else {
+						console.log('this should not happen');
+					}
+				}
+				if(y > 0) { //get the tile above
+					if(board[x][y-1]) {
+						result.push(board[x][y-1])
+					} else if(x>0 && board[x-1][y-1] && board[x-1][y-1].w == 2) {
+						result.push(board[x-1][y-1])
+					} else if(y > 1 && board[x][y-2] && board[x][y-2].h == 2) {
+						result.push(board[x][y-2]);
+					} else {
+						console.log('this should not happen');
+					}
+				}
+				if(tile.w == 2 && y > 0) { //get the other tile above
+					if(board[x+1][y-1]) {
+						result.push(board[x+1][y-1]);
+					} else if(board[x][y-1]) {
+						//already got it :)
+					} else if(y > 1 && board[x+1][y-2] && board[x+1][y-2].h == 2) {
+						result.push(board[x+1][y-2]);
+					}
+				}
+				//check for tile to the right
+				if(x < board.length-tile.w) {
+					if(board[x+tile.w][y]) {
+						result.push(board[x+tile.w][y]);
+					} else if(y > 0) {
+						if(board[x+tile.w][y-1] && board[x+tile.w][y-1].h == 2) {
+							result.push(board[x+tile.w][y-1]);
+						}
+					}
+				}
+				return result;
+			}
+
+			function drawBlock(i,j) {
+				if(board[i][j] && (i == 0 || board[i-1][j].w == 1) && (j == 0 || board[i][j-1].h == 1)) {
+					ctx.strokeStyle = '#000000';
+					var tile = board[i][j];
+					var surroundingColors = {};
+					if(Math.random() < touchRatio) {
+						var surroundingTiles = getSurroundingTiles(tile);
+						var doubleColorSurroundingTiles = surroundingTiles.filter(function(t1) {
+							var st = getSurroundingTiles(t1);
+							return st.some(function(t2) {
+								return colors[t1.x][t1.y] && colors[t1.x][t1.y] == colors[t2.x][t2.y]; 
+							});
+						});
+						doubleColorSurroundingTiles.forEach(function(t) {
+							surroundingColors[colors[t.x][t.y]] = true;
+						});
+						var seen = {};
+						surroundingTiles.forEach(function(t) {
+							if(seen[colors[t.x][t.y]]) {
+								surroundingColors[colors[t.x][t.y]] = true;
+							}
+							seen[colors[t.x][t.y]] = true;
+						});
+					}
+					else {
+						if(i>0){
+							surroundingColors[colors[i-1][j]] = true;
+							if(tile.h > 1) {
+								surroundingColors[colors[i-1][j+1]] = true;
+							}
+						}
+						if(i<colors.length-tile.w) 
+							surroundingColors[colors[i+tile.w][j]] = true;
+						if(j>0){
+							surroundingColors[colors[i][j-1]] = true;
+							if(tile.w > 1) {
+								surroundingColors[colors[i+1][j-1]] = true;
+							}
+						}
+					}
+					var possibleColors = allColors.filter((c) => !surroundingColors[c]);
+					if(possibleColors.length == 0) {
+						fail = true;
+						possibleColors = allColors
+					}
+
+					var color = possibleColors[Math.floor(Math.random()*possibleColors.length)];
+					colors[i][j] = color;
+					big = false;
+					if(tile.w > 1) {
+						colors[i+1][j] = color;
+						big = true;
+					}
+					if(tile.h > 1) {
+						colors[i][j+1] = color;
+						big = true;
+					}
+					counts[color][big ? 'big' : 'small']++;
+					ctx.fillStyle = color;
+					ctx.fillRect(i*size, j*size, size*board[i][j].w, size*board[i][j].h);
+					ctx.strokeRect(i*size, j*size, size*board[i][j].w, size*board[i][j].h);
+					for(var x = 0; x<board[i][j].w; x++) {
+						for(var y=0; y<board[i][j].h; y++) {
+							drawDots(size*(x+i), size*(y+j));
+						}
+					}
+				} else {
+					board[i][j] = {x:i,y:j,w:1,h:1};
+				}
+				
+			}
+
+			for(var j=0; j<height; j++) {
+				for(var i=0; i<width; i++) {
+					drawBlock(i,j);
+					// setTimeout(drawBlock.bind(this,i,j), 100*i + 100*width*j);
+				}
+			}
+			if(fail && (num < 1000)) {
+				console.log(num);
+				draw(num + 1)
+			} else {
+				console.log(fail ? ':(' : ':)')
+				console.log(counts);
+
+				var bottom = size*height+size;
+				size = width
+				var x = size;
+				allColors.forEach(function(color){
+					ctx.fillStyle = color;
+					ctx.textAlign = 'center';
+					ctx.textBaseline = 'middle';
+					ctx.strokeStyle = '#000000';
+					ctx.fillRect(x,bottom,size,size);
+					ctx.strokeRect(x,bottom,size,size);
+					drawDots(x,bottom);
+					ctx.fillStyle = '#000000';
+					ctx.fillText(counts[color]['small'], x-size/2, bottom+size/2);
+					ctx.fillText('Total: ' + (counts[color]['small'] + counts[color]['big']), x+size*2, bottom+size*3/2);
+					x+= size*2;
+					ctx.strokeStyle = '#000000';
+					ctx.fillStyle = color;
+					ctx.fillRect(x,bottom,size*2,size);
+					ctx.strokeRect(x,bottom,size*2,size);
+					drawDots(x,bottom);
+					drawDots(x+size,bottom);
+					ctx.fillStyle = '#000000';
+					ctx.fillText(counts[color]['big'], x-size/2, bottom+size/2);
+					x+=size*4.5
+					
+				})
+			}
+			// ctx.restore();
+		}
+	</script>
+	<style>
+		* {
+			user-select: none;
+			-webkit-user-select: none;
+		}
+		#width,#height {
+			width:50px;
+		}
+		@media print
+		{    
+		    .no-print, .no-print *
+		    {
+		        display: none !important;
+		    }
+		}
+	</style>
+</head>
+<body>
+<span class="no-print">width:<input onchange="draw(0)" id="width" placeholder="26"></span>
+<span class="no-print">height:<input onchange="draw(0)" id="height" placeholder="34"></span>
+<span class="no-print">block size:<input onchange="draw(0)" id="tilesize" type="range" ></span>
+<span class="no-print">touching colors:<input onchange="draw(0)" id="touch" type="range" ></span>
+<br class="no-print">
+<canvas onclick="draw(0)" id="canvas"></canvas>
+</body>
+</html>

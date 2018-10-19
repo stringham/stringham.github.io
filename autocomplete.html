@@ -16,13 +16,19 @@
         }
 
         class Bar extends Foo {
-            constructor() {
-                super();
-                this.valueId = 1;
+            get valueId() {
+                return 1;
+            }
+        }
+
+        class Qux extends Bar {
+            get val() {
+                return 4;
             }
         }
 
         window.bar = new Bar();
+        window.qux = new Qux();
     </script>
 </head>
 <body>
