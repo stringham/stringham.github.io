@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>crop border</title>
+	<script src="./FileSaver.js"></script>
+	<script src="./canvas-toBlob.js"></script>
+	<script src="./jszip.js"></script>
+	<script src="./cropresize.js"></script>
+	<style>
+		* {
+			user-select: none;
+		}
+
+		canvas {
+			border: 1px solid #888;
+			margin: 5px;
+		}
+	</style>
+</head>
+<body>
+<input type="file" id="select" multiple>
+<input type="number" id="bordersize" value="20">
+<button id="save" onclick="manager.save()">Save</button>
+</body>
+</html>
