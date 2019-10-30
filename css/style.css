@@ -55,6 +55,7 @@ body {
 
 .header .logo-container {
 	display: inline-block;
+	cursor: pointer;
 	margin-top: 10px;
 	float: left;
 	margin-left: 10px;
