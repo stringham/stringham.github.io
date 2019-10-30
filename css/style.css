@@ -189,10 +189,10 @@ section {
 	top: 0;
 	bottom: 0;
 	margin:auto;
-	text-align: center;
-	display: table;
 	color: #007fff;
 	font-size: 23px;
+	display: flex;
+	align-items: center;
 }
 
 #s-about .img-right {
