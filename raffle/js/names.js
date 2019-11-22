@@ -5,8 +5,6 @@
  * Copyright Ryan Stringham
  */
 
-//set the colors for each life, in HEX
-var colors = ["#ABC8E4","#628CB6","#003366","#001948","#001948","#001948","#001948"];
 
 /*
  * If you want to have the names show up on the page without entering them into
@@ -44,7 +42,14 @@ var imported = false;
  */
 
 //set the colors for each life, in HEX
-var colors = ["#ABC8E4","#628CB6","#003366","#001948","#001948","#001948","#001948"];
+var colors = ["#ABC8E4","#628CB6","#003366","#001948", "#000C24"];
+function getColor(n) {
+	if (n < colors.length) {
+		return colors[n];
+	} else {
+		return colors[colors.length - 1];
+	}
+}
 
 /*
  * If you want to have the names show up on the page without entering them into
@@ -75,6 +80,20 @@ var imported = false;
 // ];
 
 
+function importTabSeparated(ts) {
+	imported = [];
+	var rows = ts.split("\n");
+	for (var row of rows) {
+		var nameWithPoints = row.split("\t");
+		var name = nameWithPoints[0];
+		var points = nameWithPoints[1] === undefined ? 1 : parseInt(nameWithPoints[1], 10);
+		imported.push({name: name, points: points});
+	}
+	$('.enter-names').hide(500, function(){
+		makeTicketsWithPoints();
+	});
+}
+
 /**
  * This supports retrieving a list of names from a published google sheets.
  * It will look for a column name with first and last or just name to determine
@@ -91,20 +110,11 @@ function getParameterByName(name) {
     return results == null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
 }
 var key = getParameterByName('key');
-window.limit = 1;
-
-var l = getParameterByName('limit');
-if(l) {
-	var parsed = parseInt(l, 10);
-	if(!isNaN(parsed) && parsed >= 1) {
-		window.limit = parsed;
-	}
-}
 
 if(key){
 	var gridIds = ['1','o6d'];
 	function getFromGoogle(i){
-		$.ajax({
+		$.ajax({ 
 			url: 'https://spreadsheets.google.com/feeds/list/'+key+'/'+gridIds[i]+'/public/values?alt=json',
 			type: 'get',
 			dataType: "jsonp",
@@ -114,7 +124,7 @@ if(key){
 			},
 			timeout:5000,
 			success: function(list){
-				var keys = [];
+				var keys = []; 
 				for(var name in list.feed.entry[0])
 					if(name.indexOf('gsx$') == 0)
 						keys.push(name);
@@ -158,4 +168,5 @@ if(key){
 		});
 	}
 	getFromGoogle(0);
+
 }
