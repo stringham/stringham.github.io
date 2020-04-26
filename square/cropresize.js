@@ -59,10 +59,15 @@ Cropper.prototype.rotate = function(ctx, canvas) {
 }
 
 Cropper.prototype.getBlob = function(){
+	const maxSize = 1200; // 4x4 inch at 300dpi
 	var canvas = document.createElement('canvas');
 	var border = this.border * this.imgSize/this.size;
-	canvas.width = this.imgSize + 2*border;
-	canvas.height = this.imgSize + 2*border;
+	const finalSize = Math.min(maxSize, this.imgSize + 2*border);
+	const finalBorder = finalSize * this.border/this.size;
+	const finalImageSize = finalSize - finalBorder*2;
+	const scale = finalBorder/this.border;
+	canvas.width = finalSize;
+	canvas.height = finalSize;
 	var ctx = canvas.getContext('2d');
 	ctx.save();
 	ctx.imageSmoothingEnabled = false;
@@ -73,10 +78,10 @@ Cropper.prototype.getBlob = function(){
 	x = Math.min(this.width - this.imgSize, Math.max(0,x));
 	y = Math.min(this.height - this.imgSize, Math.max(0,y));
 	this.rotate(ctx, canvas);
-	ctx.drawImage(this.img, x, y, this.imgSize, this.imgSize, border, border, this.imgSize, this.imgSize);
+	ctx.drawImage(this.img, x, y, this.imgSize, this.imgSize, finalBorder, finalBorder, finalImageSize, finalImageSize);
 	ctx.restore();
 	if(this.timestamp) {
-		this.drawTimestamp(ctx, this.imgSize + 2*border, this.imgSize/this.size);
+		this.drawTimestamp(ctx, finalSize, scale);
 	}
 	return new Promise(function(resolve, reject) {
 		canvas.toBlob(function(blob) {
