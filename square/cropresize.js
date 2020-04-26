@@ -195,20 +195,20 @@ Manager.prototype.addFile = function(file) {
 	this.croppers.push(new Cropper(file, size.value, timestamp.checked, this.cropperContainer));
 }
 
-Manager.prototype.save = function() {
-	Promise.all(this.croppers.map(function(c) {
-		return c.getBlob();
-	})).then(function(blobs){
-		var zip = new JSZip();
-		for(var i=0; i<blobs.length; i++) {
-			zip.file(blobs[i].name+'.jpg', blobs[i].blob);
-		}
-		zip.generateAsync({
-		    type: "blob"
-		}).then(function(f) {
-			saveAs(f, "photos.zip");
-		});
-	})
+Manager.prototype.save = async function() {
+	const blobs = [];
+	for(let cropper of this.croppers) {
+		blobs.push(await cropper.getBlob());
+	}
+	var zip = new JSZip();
+	for(var i=0; i<blobs.length; i++) {
+		zip.file(blobs[i].name+'.jpg', blobs[i].blob);
+	}
+	zip.generateAsync({
+		type: "blob"
+	}).then(function(f) {
+		saveAs(f, "photos.zip");
+	});
 }
 
 async function getExifOrientation(img) {
