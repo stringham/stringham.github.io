@@ -20,6 +20,8 @@ function Cropper(file, border, timestamp, parent) {
 	this.time = '';
 	this.exifOrientation = 1;
 
+    this.shouldRotate = getComputedStyle(document.body)['imageOrientation'] != 'from-image';
+
 	this.img.onload = async function(){
 		this.width = this.img.naturalWidth;
 		this.height = this.img.naturalHeight;
@@ -42,7 +44,7 @@ function Cropper(file, border, timestamp, parent) {
 }
 
 Cropper.prototype.rotate = function(ctx, canvas) {
-	if(this.exifOrientation != 1) {
+	if(this.shouldRotate && this.exifOrientation != 1) {
 		ctx.translate(canvas.width/2, canvas.height/2);
 		if(this.exifOrientation == 6 || this.exifOrientation == 7) {
 			ctx.rotate(Math.PI/2);
@@ -152,20 +154,22 @@ Cropper.prototype.mousemove = function(e) {
 			x:scale*(this.anchor.x-e.clientX),
 			y:scale*(this.anchor.y-e.clientY)
 		};
-		if(this.exifOrientation == 6 || this.exifOrientation == 5) {
-			[this.offset.x, this.offset.y] = [this.offset.y, -this.offset.x];
-		} else if(this.exifOrientation == 8 || this.exifOrientation == 7) {
-			[this.offset.x, this.offset.y] = [-this.offset.y, this.offset.x];
-		} else if(this.exifOrientation == 3 || this.exifOrientation == 4) {
-			[this.offset.x, this.offset.y] = [-this.offset.x, -this.offset.y];
-		}
+        if(this.shouldRotate) {
+            if(this.exifOrientation == 6 || this.exifOrientation == 5) {
+                [this.offset.x, this.offset.y] = [this.offset.y, -this.offset.x];
+            } else if(this.exifOrientation == 8 || this.exifOrientation == 7) {
+                [this.offset.x, this.offset.y] = [-this.offset.y, this.offset.x];
+            } else if(this.exifOrientation == 3 || this.exifOrientation == 4) {
+                [this.offset.x, this.offset.y] = [-this.offset.x, -this.offset.y];
+            }
 
-		if(this.exifOrientation in {5:true,7:true,}) {
-			this.offset.y = -this.offset.y;
-		}
-		if(this.exifOrientation in {4:true,2:true}) {
-			this.offset.x = -this.offset.x;
-		}
+            if(this.exifOrientation in {5:true,7:true,}) {
+                this.offset.y = -this.offset.y;
+            }
+            if(this.exifOrientation in {4:true,2:true}) {
+                this.offset.x = -this.offset.x;
+            }
+        }
 
 		this.render();
 	}
