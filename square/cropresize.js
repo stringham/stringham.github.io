@@ -60,7 +60,7 @@ Cropper.prototype.rotate = function(ctx, canvas) {
 	}
 }
 
-Cropper.prototype.getBlob = function(){
+Cropper.prototype.getBlob = function(useFourBySix){
 	const maxSize = 1200; // 4x4 inch at 300dpi
 	var canvas = document.createElement('canvas');
 	var border = this.border * this.imgSize/this.size;
@@ -68,7 +68,7 @@ Cropper.prototype.getBlob = function(){
 	const finalBorder = finalSize * this.border/this.size;
 	const finalImageSize = finalSize - finalBorder*2;
 	const scale = finalBorder/this.border;
-	canvas.width = finalSize;
+	canvas.width = useFourBySix ? finalSize * 3 / 2 : finalSize;
 	canvas.height = finalSize;
 	var ctx = canvas.getContext('2d');
 	ctx.save();
@@ -193,6 +193,8 @@ Manager = function(){
 	this.container.appendChild(this.cropperContainer);
 
 	this.croppers = [];
+
+    this.useFourBySix = false;
 }
 
 Manager.prototype.addFile = function(file) {
@@ -202,7 +204,7 @@ Manager.prototype.addFile = function(file) {
 Manager.prototype.save = async function() {
 	const blobs = [];
 	for(let cropper of this.croppers) {
-		blobs.push(await cropper.getBlob());
+		blobs.push(await cropper.getBlob(this.useFourBySix));
 	}
 	var zip = new JSZip();
 	for(var i=0; i<blobs.length; i++) {
@@ -267,11 +269,13 @@ async function getTime(img, name) {
 var manager;
 var size;
 var timestamp;
+var fourBySix;
 
 document.addEventListener("DOMContentLoaded", function(event) {
 	var select = document.getElementById('select');
 	size = document.getElementById('bordersize');
 	timestamp = document.getElementById('timestamp');
+	fourBySix = document.getElementById('four-by-six');
 
 	manager = new Manager();
 
@@ -283,6 +287,10 @@ document.addEventListener("DOMContentLoaded", function(event) {
 
 	timestamp.addEventListener('change', () => {
 		manager.croppers.forEach(c => c.setTimestamp(timestamp.checked))
+	});
+
+    fourBySix.addEventListener('change', () => {
+		manager.useFourBySix = fourBySix.checked;
 	});
 
 	select.addEventListener('change', function(e){
