@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <meta charset="UTF-8">
+
+        <title>Standup Order</title>
+        <style>
+        textarea {
+            resize: none;
+        }
+        #out {
+            display: flex;
+            flex-wrap: wrap;
+        }
+
+        .day {
+            margin: 10px;
+            border: 1px solid black;
+            padding: 5px;
+            border-radius: 16px;
+        }
+
+        .today {
+            border-color: blue;
+        }
+    </style>
+
+        <script
+            src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"
+            integrity="sha512-a+SUDuwNzXDvz4XrIcXHuCf089/iJAoN4lmrXJg18XnduKK6YlDHNRalv4yd1N40OKI80tFidF+rqTFKGPoWFQ=="
+            crossorigin="anonymous"
+            referrerpolicy="no-referrer"
+        ></script>
+        <script
+            src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/x64-core.min.js"
+            integrity="sha512-JM1UUtvdWzOB1YzaZsdpEXZtFkbavVzXHL1yqZY0NLIBEJKr5fuxmJJO6RgtzJEb1aXXHWLIUtEVVbjpGQ9eCg=="
+            crossorigin="anonymous"
+            referrerpolicy="no-referrer"
+        ></script>
+
+    </head>
+
+    <body>
+        <h1>Names:</h1>
+        <textarea
+            id="names"
+            rows="15"
+        ></textarea>
+
+        <h1>Standup Order:</h1>
+        <div id="out"></div>
+
+        <script src="./standup.js"></script>
+
+    </body>
+
+</html>
