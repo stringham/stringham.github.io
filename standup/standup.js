@@ -64,5 +64,7 @@ if (h.startsWith("#")) {
 }
 
 document.getElementById("names").addEventListener("input", () => {
-    update(document.getElementById("names").value.split("\n"));
+    const names = document.getElementById("names").value.split("\n");
+    window.location.hash = '#' + btoa(names.join(','));
+    update(names);
 });
