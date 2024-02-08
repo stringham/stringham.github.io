@@ -42,11 +42,11 @@ function update(names) {
             })}</h3>`;
             output.appendChild(day);
 
-            const ol = document.createElement("ol");
+            const ol = document.createElement("div");
             day.appendChild(ol);
-            for (const n of ordered) {
-                const current = document.createElement("li");
-                current.innerText = n;
+            for (const [index, n] of ordered.entries()) {
+                const current = document.createElement("div");
+                current.innerText = `${index+1}. ${n}`;
                 ol.appendChild(current);
             }
         }
