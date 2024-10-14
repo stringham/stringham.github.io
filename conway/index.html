@@ -66,6 +66,19 @@
 			font-size: 40px;
 			margin-top:10px;
 		}
+        #custom {
+            display: none;
+        }
+        button {
+            margin-top: 10px;
+            margin-bottom: 10px;
+            padding: 5px;
+            background-color: #007fff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
 	</style>
 
 	<link href="https://fonts.googleapis.com/css?family=Source+Sans Pro:200italic,200,300italic,300,400italic,400,600italic,600,700italic,700,900italic,900" rel="stylesheet" type="text/css">
@@ -117,8 +130,8 @@
     	<div class="alive-option" id="third">Third</div>
     	<div class="alive-option" id="fourth">Fourth</div>
     </div>
-    <input type="text" placeholder="image url" id="custom">
-    <button id="custom-button">Use Custom</button>
+    <button id="custom-button">Select Custom Image</button>
+    <input type="file" id="custom" accept="image/*">
     <div id="options">
     </div>
     <h1 class="header-text">Description</h1>

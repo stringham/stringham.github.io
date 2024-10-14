@@ -58,8 +58,17 @@ document.addEventListener("DOMContentLoaded", function() {
   var custom = document.getElementById('custom');
   var button = document.getElementById('custom-button');
   button.onclick = function(e){
-    customImg.src = custom.value;
+    e.preventDefault();
+    custom.click();
   }
+
+  // When the user selects an image, set the src of the image to the file
+  custom.onchange = function(e){
+    var file = e.target.files[0];
+    if(file){
+      customImg.src = window.URL.createObjectURL(file);
+    }
+  };
 
   updateOptions();
 
