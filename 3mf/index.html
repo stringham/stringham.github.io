@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>3MF Multi-Color Reassignment</title>
+  <!-- Include JSZip and FileSaver.js from CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f5f5f5;
+      margin: 0;
+      padding: 0;
+    }
+    #container {
+      max-width: 800px;
+      margin: 30px auto;
+      background: #fff;
+      padding: 20px 30px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    h1, h2 {
+      text-align: center;
+      color: #333;
+    }
+    .center { text-align: center; }
+    input[type="file"], button {
+      font-size: 1rem;
+      padding: 10px;
+      margin: 10px 0;
+    }
+    /* Mapping UI table */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      padding: 10px;
+      text-align: center;
+      border: 1px solid #ddd;
+    }
+    .swatch {
+      display: inline-block;
+      width: 24px;
+      height: 24px;
+      border: 1px solid #ccc;
+      vertical-align: middle;
+      margin-right: 6px;
+      border-radius: 3px;
+    }
+    /* Custom dropdown styles */
+    .dropdown {
+      position: relative;
+      display: inline-block;
+      cursor: pointer;
+    }
+    .dropdown-button {
+      padding: 6px 12px;
+      border: 1px solid #ccc;
+      background: #fff;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .dropdown-button:after {
+      content: '▼';
+      font-size: 0.7em;
+      margin-left: 4px;
+    }
+    .dropdown-content {
+      position: absolute;
+      top: 110%;
+      left: 0;
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      min-width: 100%;
+      z-index: 10;
+      display: none;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .dropdown-content.active {
+      display: block;
+    }
+    .dropdown-item {
+      padding: 6px 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+    .dropdown-item:hover {
+      background: #f0f0f0;
+    }
+    /* Todo list styles */
+    #todoUI { margin-top: 20px; }
+    #todoList {
+      list-style: none;
+      padding: 0;
+      margin: 0 auto;
+      max-width: 500px;
+    }
+    #todoList li {
+      background: #fafafa;
+      border: 1px solid #ddd;
+      margin: 6px 0;
+      padding: 8px 12px;
+      border-radius: 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 1rem;
+    }
+    #todoList li.done {
+      text-decoration: line-through;
+      color: #777;
+      background: #eaeaea;
+    }
+    .indicator { min-width: 24px; text-align: center; }
+    .spinner {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      border: 2px solid #007bff;
+      border-top: 2px solid transparent;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    #statusUI {
+      text-align: center;
+      margin-top: 20px;
+      font-style: italic;
+      color: #555;
+    }
+    .hidden { display: none; }
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    /* Reset button styling */
+    #resetUI { margin-top: 20px; }
+    .primary-button {
+      background-color: #007bff;
+      border: none;
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1rem;
+      margin: 10px;
+    }
+    .primary-button:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+<div id="container">
+  <h1>3MF Multi-Color Reassignment</h1>
+  <div id="fileUI" class="center">
+    <p>Select a 3MF file:</p>
+    <input type="file" id="fileInput" accept=".3mf">
+  </div>
+
+  <div id="mappingUI" class="hidden">
+    <h2>Reassign Colors</h2>
+    <p>Select a target color for each slot by clicking the button.</p>
+    <table id="mappingTable">
+      <thead>
+        <tr>
+          <th>Slot</th>
+          <th>Source Color</th>
+          <th>Target Color</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <div class="center">
+      <button id="processButton">Generate new 3MF</button>
+    </div>
+  </div>
+
+  <div id="todoUI" class="hidden">
+    <h2>Processing Steps</h2>
+    <ul id="todoList"></ul>
+  </div>
+
+  <div id="statusUI" class="hidden">
+    <p id="statusMessage"></p>
+  </div>
+
+  <div id="resetUI" class="hidden center">
+    <button id="downloadButton" class="primary-button hidden">Download new 3MF</button>
+    <br>
+    <button id="resetButton">Pick Another File</button>
+  </div>
+</div>
+
+<script>
+  // Fixed token mapping (slot i corresponds to tokenMapping[i-1])
+  const tokenMapping = ["4", "8", "0C", "1C", "2C", "3C", "4C", "5C", "6C", "7C", "8C", "9C", "AC", "BC", "CC", "DC"];
+  let zip, originalFileName;
+  let filamentColours = [];  // Array of HEX strings from Metadata/project_settings.config
+  const projectSettingsPath = "Metadata/project_settings.config";
+
+  // UI elements
+  const fileInput = document.getElementById("fileInput");
+  const mappingUI = document.getElementById("mappingUI");
+  const mappingTableBody = document.querySelector("#mappingTable tbody");
+  const processButton = document.getElementById("processButton");
+  const todoUI = document.getElementById("todoUI");
+  const todoList = document.getElementById("todoList");
+  const statusUI = document.getElementById("statusUI");
+  const statusMessage = document.getElementById("statusMessage");
+  const resetUI = document.getElementById("resetUI");
+  const fileUI = document.getElementById("fileUI");
+  const downloadButton = document.getElementById("downloadButton");
+
+  // We'll store mapping selections in an array, index 0 corresponds to slot 1.
+  let mappingSelections = [];
+  let finalZipBlob = null;  // Will store the generated blob
+
+  // Helper to determine if a hex color is dark.
+  function isDarkColor(hex) {
+    // Remove leading '#' if present.
+    if (hex.startsWith("#")) hex = hex.slice(1);
+    // Parse R, G, B.
+    const r = parseInt(hex.substr(0,2), 16);
+    const g = parseInt(hex.substr(2,2), 16);
+    const b = parseInt(hex.substr(4,2), 16);
+    // Calculate luminance.
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b);
+    return luminance < 128;
+  }
+
+  // Updated swapColors using mapping object.
+  function swapColors(paintColorStr, mapping) {
+    const twoCharCodes = new Set(["0C", "1C", "2C", "3C", "4C", "5C", "6C", "7C", "8C", "9C", "AC", "BC", "CC", "DC"]);
+    let tokens = [];
+    let i = 0;
+    while (i < paintColorStr.length) {
+      if (i + 1 < paintColorStr.length) {
+        let twoChar = paintColorStr.substring(i, i + 2);
+        if (twoCharCodes.has(twoChar)) {
+          tokens.push(twoChar);
+          i += 2;
+          continue;
+        }
+      }
+      tokens.push(paintColorStr.charAt(i));
+      i++;
+    }
+    return tokens.map(token => mapping.hasOwnProperty(token) ? mapping[token] : token).join('');
+  }
+
+  // Recursively traverse XML DOM and update attributes.
+  function traverseAndSwap(node, tokenMap, slotMap) {
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      if (node.hasAttribute("paint_color")) {
+        const oldVal = node.getAttribute("paint_color");
+        const newVal = swapColors(oldVal, tokenMap);
+        node.setAttribute("paint_color", newVal);
+      }
+      if (node.hasAttribute("key") && node.getAttribute("key") === "extruder" && node.hasAttribute("value")) {
+        let val = node.getAttribute("value");
+        if (slotMap.hasOwnProperty(val)) {
+          node.setAttribute("value", slotMap[val]);
+        }
+      }
+    }
+    node.childNodes.forEach(child => traverseAndSwap(child, tokenMap, slotMap));
+  }
+
+  // Reset app state
+  function resetApp() {
+    zip = null;
+    originalFileName = "";
+    filamentColours = [];
+    mappingSelections = [];
+    mappingTableBody.innerHTML = "";
+    todoList.innerHTML = "";
+    statusMessage.textContent = "";
+    finalZipBlob = null;
+    mappingUI.classList.add("hidden");
+    todoUI.classList.add("hidden");
+    statusUI.classList.add("hidden");
+    resetUI.classList.add("hidden");
+    downloadButton.classList.add("hidden");
+    fileUI.classList.remove("hidden");
+    fileInput.value = "";
+  }
+
+  // File selection
+  fileInput.addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    originalFileName = file.name;
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      zip = await JSZip.loadAsync(arrayBuffer);
+    } catch (error) {
+      alert("Failed to load the 3MF file.");
+      return;
+    }
+    const configFile = zip.file(projectSettingsPath);
+    if (!configFile) {
+      alert("project_settings.config not found in Metadata folder.");
+      return;
+    }
+    try {
+      const configText = await configFile.async("string");
+      const configJSON = JSON.parse(configText);
+      if (!Array.isArray(configJSON.filament_colour)) {
+        alert("filament_colour array not found in project_settings.config.");
+        return;
+      }
+      filamentColours = configJSON.filament_colour;
+      // Initialize mappingSelections with default: no change.
+      mappingSelections = filamentColours.map((col, i) => i + 1);
+    } catch (error) {
+      alert("Error reading or parsing project_settings.config.");
+      return;
+    }
+    buildMappingTable();
+    fileUI.classList.add("hidden");
+    mappingUI.classList.remove("hidden");
+  });
+
+  // Build mapping table with a custom dropdown experience.
+  function buildMappingTable() {
+    mappingTableBody.innerHTML = "";
+    for (let i = 0; i < filamentColours.length; i++) {
+      const row = document.createElement("tr");
+
+      // Slot column
+      const cellSlot = document.createElement("td");
+      cellSlot.textContent = i + 1;
+      row.appendChild(cellSlot);
+
+      // Source color swatch
+      const cellSource = document.createElement("td");
+      const sourceSwatch = document.createElement("div");
+      sourceSwatch.className = "swatch";
+      sourceSwatch.style.backgroundColor = filamentColours[i];
+      cellSource.appendChild(sourceSwatch);
+      row.appendChild(cellSource);
+
+      // Target mapping dropdown column
+      const cellTarget = document.createElement("td");
+      const dropdown = document.createElement("div");
+      dropdown.className = "dropdown";
+
+      // The button that shows the current selection.
+      const button = document.createElement("div");
+      button.className = "dropdown-button";
+      button.style.backgroundColor = filamentColours[mappingSelections[i]-1];
+      // Set text color based on brightness.
+      if (isDarkColor(filamentColours[mappingSelections[i]-1])) {
+        button.style.color = "#fff";
+      } else {
+        button.style.color = "#000";
+      }
+      button.textContent = `Slot ${mappingSelections[i]}`;
+      dropdown.appendChild(button);
+
+      // The dropdown content, hidden by default.
+      const dropdownContent = document.createElement("div");
+      dropdownContent.className = "dropdown-content";
+      for (let j = 0; j < filamentColours.length; j++) {
+        const item = document.createElement("div");
+        item.className = "dropdown-item";
+        const itemSwatch = document.createElement("div");
+        itemSwatch.className = "swatch";
+        itemSwatch.style.backgroundColor = filamentColours[j];
+        item.appendChild(itemSwatch);
+        item.appendChild(document.createTextNode(`Slot ${j+1}`));
+        item.dataset.target = j + 1;
+        item.addEventListener("click", () => {
+          mappingSelections[i] = Number(item.dataset.target);
+          button.style.backgroundColor = filamentColours[mappingSelections[i]-1];
+          // Update text color based on brightness.
+          if (isDarkColor(filamentColours[mappingSelections[i]-1])) {
+            button.style.color = "#fff";
+          } else {
+            button.style.color = "#000";
+          }
+          button.textContent = `Slot ${mappingSelections[i]}`;
+          dropdownContent.classList.remove("active");
+        });
+        dropdownContent.appendChild(item);
+      }
+      dropdown.appendChild(dropdownContent);
+
+      button.addEventListener("click", (e) => {
+        e.stopPropagation();
+        dropdownContent.classList.toggle("active");
+      });
+
+      document.addEventListener("click", () => {
+        dropdownContent.classList.remove("active");
+      });
+
+      cellTarget.appendChild(dropdown);
+      row.appendChild(cellTarget);
+
+      mappingTableBody.appendChild(row);
+    }
+  }
+
+  // Processing logic triggered by "Generate new 3MF" button.
+  processButton.addEventListener("click", async () => {
+    processButton.disabled = true;
+    mappingUI.classList.add("hidden");
+    // Build mapping objects from mappingSelections.
+    const tokenMap = {};
+    const slotMap = {};
+    mappingSelections.forEach((targetSlot, index) => {
+      const sourceSlot = index + 1;
+      slotMap[String(sourceSlot)] = String(targetSlot);
+      tokenMap[tokenMapping[sourceSlot - 1]] = tokenMapping[targetSlot - 1];
+    });
+    window.__tokenMap = tokenMap;
+    window.__slotMap = slotMap;
+
+    // Identify files to process.
+    const filesToProcess = [];
+    const modelFiles = [];
+    const objectsFolder = zip.folder("3D/Objects");
+    if (objectsFolder) {
+      objectsFolder.forEach((relativePath, file) => {
+        if (relativePath.endsWith(".model")) {
+          modelFiles.push("3D/Objects/" + relativePath);
+        }
+      });
+    }
+    modelFiles.forEach((filePath, idx) => {
+      filesToProcess.push({ label: `Model ${idx + 1}`, path: filePath });
+    });
+    if (zip.file("Metadata/model_settings.config")) {
+      filesToProcess.push({ label: "Metadata file", path: "Metadata/model_settings.config" });
+    }
+    // Add a final "Compress" step.
+    filesToProcess.push({ label: "Compress", path: null });
+    window.__filesToProcess = filesToProcess;
+
+    generateTodoList(); // Build and show the todo list.
+    statusUI.classList.remove("hidden");
+    statusMessage.textContent = "Starting processing...";
+
+    // Process files sequentially.
+    for (let i = 0; i < filesToProcess.length; i++) {
+      const item = filesToProcess[i];
+      if (item.path) {
+        statusMessage.textContent = `Processing ${item.label}...`;
+        await processXmlFile(item.path, i);
+      } else {
+        // "Compress" step: show spinner before generating zip.
+        statusMessage.textContent = "Preparing compression...";
+        const li = document.getElementById("todo-" + i);
+        li.querySelector(".indicator").innerHTML = '<span class="spinner"></span>';
+      }
+    }
+    // Generate ZIP with high compression and show progress.
+    try {
+      finalZipBlob = await zip.generateAsync({
+        type: "blob",
+        compression: "DEFLATE",
+        compressionOptions: { level: 9 }
+      }, (metadata) => {
+        statusMessage.textContent = `Compressing: ${metadata.percent.toFixed(0)}%`;
+      });
+      // Mark compress step done.
+      const compressIndex = filesToProcess.length - 1;
+      const li = document.getElementById("todo-" + compressIndex);
+      li.querySelector(".indicator").textContent = "✓";
+      li.classList.add("done");
+      statusMessage.textContent = "Processing complete.";
+      // Show the download button.
+      downloadButton.classList.remove("hidden");
+    } catch (error) {
+      alert("Error generating the new 3MF file.");
+      console.error(error);
+      statusMessage.textContent = "Error during compression.";
+    }
+    processButton.disabled = false;
+    resetUI.classList.remove("hidden");
+  });
+
+  // Process a single XML file.
+  async function processXmlFile(filePath, idx) {
+    const li = document.getElementById("todo-" + idx);
+    li.querySelector(".indicator").innerHTML = '<span class="spinner"></span>';
+    try {
+      const fileEntry = zip.file(filePath);
+      const xmlText = await fileEntry.async("string");
+      const parser = new DOMParser();
+      const xmlDoc = parser.parseFromString(xmlText, "application/xml");
+      traverseAndSwap(xmlDoc, window.__tokenMap, window.__slotMap);
+      const serializer = new XMLSerializer();
+      const modifiedXml = serializer.serializeToString(xmlDoc);
+      zip.file(filePath, modifiedXml);
+      li.querySelector(".indicator").textContent = "✓";
+      li.classList.add("done");
+      statusMessage.textContent = `${filePath} processed.`;
+    } catch (err) {
+      console.error(`Error processing ${filePath}:`, err);
+      li.querySelector(".indicator").textContent = "✖";
+      statusMessage.textContent = `Error processing ${filePath}.`;
+    }
+  }
+
+  // Generate the todo list UI.
+  function generateTodoList() {
+    todoList.innerHTML = "";
+    window.__filesToProcess.forEach((item, idx) => {
+      const li = document.createElement("li");
+      li.id = "todo-" + idx;
+      li.innerHTML = `<span>${item.label}</span><span class="indicator"></span>`;
+      todoList.appendChild(li);
+    });
+    todoUI.classList.remove("hidden");
+  }
+
+  // Download button triggers the download.
+  downloadButton.addEventListener("click", () => {
+    const newFileName = `modified - ${originalFileName}`;
+    saveAs(finalZipBlob, newFileName);
+  });
+
+  // Reset button.
+  document.getElementById("resetButton").addEventListener("click", resetApp);
+</script>
+</body>
+</html>
