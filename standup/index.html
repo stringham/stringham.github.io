@@ -1,118 +1,185 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Standup Order</title>
-  <style>
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: #f4f4f9;
-      margin: 0;
-      padding: 20px;
-      color: #333;
-      line-height: 1.6;
-    }
-
-    h1 {
-      margin-bottom: 10px;
-      font-size: 1.5rem;
-    }
-
-    textarea {
-      width: 100%;
-      max-width: 600px;
-      display: block;
-      margin-bottom: 20px;
-      font-size: 1rem;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      resize: none;
-      box-sizing: border-box;
-    }
-
-    #out {
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-      max-width: 600px;
-      margin: 0 auto;
-    }
-
-    .day {
-      background-color: #fff;
-      padding: 15px;
-      border-radius: 12px;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-      cursor: pointer;
-      transition: background-color 0.2s;
-    }
-
-    .day:hover {
-      background-color: #f0f0f0;
-    }
-
-    .today {
-      border-left: 5px solid #007bff;
-      background-color: #e9f2ff;
-    }
-
-    button#showMore {
-      background-color: #007bff;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      padding: 10px 20px;
-      font-size: 1rem;
-      cursor: pointer;
-      margin: 20px auto;
-      display: block;
-    }
-
-    button#showMore:hover {
-      background-color: #0056b3;
-    }
-
-    /* Mobile specific adjustments */
-    @media (max-width: 600px) {
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Standup Order</title>
+    <link href="https://fonts.googleapis.com/css?family=Roboto:400,500&display=swap" rel="stylesheet" />
+    <style>
       body {
-        padding: 10px;
+        font-family: 'Roboto', sans-serif;
+        background-color: #f7f9fc;
+        margin: 0;
+        padding: 20px;
+        color: #333;
+        line-height: 1.6;
       }
 
       h1 {
-        font-size: 1.3rem;
+        text-align: center;
+        margin-bottom: 20px;
+        font-size: 1.75rem;
+        color: #222;
       }
 
-      textarea, #out {
-        max-width: 100%;
+      /* Names heading */
+      #namesHeading {
+        text-align: center;
+        font-size: 1.25rem;
+        color: #444;
+        margin-bottom: 10px;
+      }
+
+      /* Toggle button for names (subtle style) */
+      #toggleNames {
+        background: none;
+        border: none;
+        color: #777;
+        font-size: 0.9rem;
+        cursor: pointer;
+        margin-bottom: 10px;
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      /* Textarea container */
+      #nameContainer {
+        max-width: 600px;
+        margin: 0 auto 20px auto;
+      }
+
+      textarea {
+        width: 100%;
+        font-size: 1rem;
+        padding: 12px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        resize: none;
+        box-sizing: border-box;
+        background-color: #fff;
+      }
+
+      #out {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        max-width: 600px;
+        margin: 0 auto;
+      }
+
+      .day {
+        position: relative;
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 3px 12px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s, box-shadow 0.2s;
+      }
+
+      .day:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+      }
+
+      .today {
+        border-left: 5px solid #007bff;
+        background-color: #eaf3ff;
+      }
+
+      .copy-icon {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        width: 24px;
+        height: 24px;
+        cursor: pointer;
+        transition: opacity 0.2s;
+        user-select: none;
+      }
+
+      .copy-icon:hover {
+        opacity: 0.8;
+      }
+
+      .copy-notification {
+        position: absolute;
+        top: -10px;
+        right: 50px;
+        background: #28a745;
+        color: #fff;
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        opacity: 0;
+        transition: opacity 0.3s;
+        pointer-events: none;
       }
 
       button#showMore {
-        width: 100%;
-        padding: 12px;
+        background-color: #007bff;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        padding: 12px 24px;
+        font-size: 1rem;
+        cursor: pointer;
+        margin: 20px auto;
+        display: block;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+        transition: background-color 0.2s;
       }
-    }
-  </style>
-  <script
-    src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"
-    integrity="sha512-a+SUDuwNzXDvz4XrIcXHuCf089/iJAoN4lmrXJg18XnduKK6YlDHNRalv4yd1N40OKI80tFidF+rqTFKGPoWFQ=="
-    crossorigin="anonymous"
-    referrerpolicy="no-referrer"></script>
-  <script
-    src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/x64-core.min.js"
-    integrity="sha512-JM1UUtvdWzOB1YzaZsdpEXZtFkbavVzXHL1yqZY0NLIBEJKr5fuxmJJO6RgtzJEb1aXXHWLIUtEVVbjpGQ9eCg=="
-    crossorigin="anonymous"
-    referrerpolicy="no-referrer"></script>
-</head>
-<body>
-  <h1>Names:</h1>
-  <textarea id="names" rows="15"></textarea>
 
-  <h1>Standup Order:</h1>
-  <div id="out"></div>
-  <button id="showMore">Show More Days</button>
+      button#showMore:hover {
+        background-color: #0056b3;
+      }
 
-  <script src="./standup.js"></script>
-</body>
+      /* Mobile adjustments */
+      @media (max-width: 600px) {
+        body {
+          padding: 10px;
+        }
+
+        h1 {
+          font-size: 1.5rem;
+        }
+
+        textarea,
+        #out,
+        #toggleNames {
+          max-width: 100%;
+        }
+
+        button#showMore {
+          width: 100%;
+          padding: 14px;
+        }
+      }
+    </style>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"
+      integrity="sha512-a+SUDuwNzXDvz4XrIcXHuCf089/iJAoN4lmrXJg18XnduKK6YlDHNRalv4yd1N40OKI80tFidF+rqTFKGPoWFQ=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/x64-core.min.js"
+      integrity="sha512-JM1UUtvdWzOB1YzaZsdpEXZtFkbavVzXHL1yqZY0NLIBEJKr5fuxmJJO6RgtzJEb1aXXHWLIUtEVVbjpGQ9eCg=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+  </head>
+  <body>
+    <h1 id="namesHeading">Names:</h1>
+    <button id="toggleNames">Hide names</button>
+    <div id="nameContainer">
+      <textarea id="names" rows="15"></textarea>
+    </div>
+
+    <h1>Standup Order:</h1>
+    <div id="out"></div>
+    <button id="showMore">Show More Days</button>
+
+    <script src="./standup.js"></script>
+  </body>
 </html>
