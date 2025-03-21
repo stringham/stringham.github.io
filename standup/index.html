@@ -1,62 +1,118 @@
 <!DOCTYPE html>
 <html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Standup Order</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f4f4f9;
+      margin: 0;
+      padding: 20px;
+      color: #333;
+      line-height: 1.6;
+    }
 
-    <head>
-        <meta charset="UTF-8">
+    h1 {
+      margin-bottom: 10px;
+      font-size: 1.5rem;
+    }
 
-        <title>Standup Order</title>
-        <style>
-        textarea {
-            resize: none;
-        }
-        #out {
-            display: flex;
-            flex-direction: column;
-        }
+    textarea {
+      width: 100%;
+      max-width: 600px;
+      display: block;
+      margin-bottom: 20px;
+      font-size: 1rem;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      resize: none;
+      box-sizing: border-box;
+    }
 
-        .day {
-            margin: 10px;
-            padding: 15px;
-            border-radius: 16px;
-        }
+    #out {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
 
-        .today {
-            border-color: blue;
-            background-color: #f5f5ff;
-        }
+    .day {
+      background-color: #fff;
+      padding: 15px;
+      border-radius: 12px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
 
-        li {
-            text-wrap: nowrap;
-        }
-    </style>
+    .day:hover {
+      background-color: #f0f0f0;
+    }
 
-        <script
-            src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"
-            integrity="sha512-a+SUDuwNzXDvz4XrIcXHuCf089/iJAoN4lmrXJg18XnduKK6YlDHNRalv4yd1N40OKI80tFidF+rqTFKGPoWFQ=="
-            crossorigin="anonymous"
-            referrerpolicy="no-referrer"
-        ></script>
-        <script
-            src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/x64-core.min.js"
-            integrity="sha512-JM1UUtvdWzOB1YzaZsdpEXZtFkbavVzXHL1yqZY0NLIBEJKr5fuxmJJO6RgtzJEb1aXXHWLIUtEVVbjpGQ9eCg=="
-            crossorigin="anonymous"
-            referrerpolicy="no-referrer"
-        ></script>
+    .today {
+      border-left: 5px solid #007bff;
+      background-color: #e9f2ff;
+    }
 
-    </head>
+    button#showMore {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 20px;
+      font-size: 1rem;
+      cursor: pointer;
+      margin: 20px auto;
+      display: block;
+    }
 
-    <body>
-        <h1>Names:</h1>
-        <textarea
-            id="names"
-            rows="15"
-        ></textarea>
+    button#showMore:hover {
+      background-color: #0056b3;
+    }
 
-        <h1>Standup Order:</h1>
-        <div id="out"></div>
+    /* Mobile specific adjustments */
+    @media (max-width: 600px) {
+      body {
+        padding: 10px;
+      }
 
-        <script src="./standup.js"></script>
+      h1 {
+        font-size: 1.3rem;
+      }
 
-    </body>
+      textarea, #out {
+        max-width: 100%;
+      }
 
+      button#showMore {
+        width: 100%;
+        padding: 12px;
+      }
+    }
+  </style>
+  <script
+    src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"
+    integrity="sha512-a+SUDuwNzXDvz4XrIcXHuCf089/iJAoN4lmrXJg18XnduKK6YlDHNRalv4yd1N40OKI80tFidF+rqTFKGPoWFQ=="
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer"></script>
+  <script
+    src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/x64-core.min.js"
+    integrity="sha512-JM1UUtvdWzOB1YzaZsdpEXZtFkbavVzXHL1yqZY0NLIBEJKr5fuxmJJO6RgtzJEb1aXXHWLIUtEVVbjpGQ9eCg=="
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer"></script>
+</head>
+<body>
+  <h1>Names:</h1>
+  <textarea id="names" rows="15"></textarea>
+
+  <h1>Standup Order:</h1>
+  <div id="out"></div>
+  <button id="showMore">Show More Days</button>
+
+  <script src="./standup.js"></script>
+</body>
 </html>
