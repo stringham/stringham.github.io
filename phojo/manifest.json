@@ -1,0 +1,42 @@
+{
+  "short_name": "Phojo",
+  "name": "Photo Journal",
+  "description": "Your personal photo journal, securely stored in Dropbox.",
+  "icons": [
+    {
+      "src": "/phojo/logo.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any"
+    },
+    {
+      "src": "/phojo/icons/icon-192x192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any"
+    },
+    {
+      "src": "/phojo/icons/icon-512x512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+       "purpose": "any"
+    },
+    {
+      "src": "/phojo/icons/maskable-icon-192x192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/phojo/icons/maskable-icon-512x512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+       "purpose": "maskable"
+    }
+  ],
+  "start_url": "/phojo/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2094f3",
+  "scope": "/phojo/"
+}
