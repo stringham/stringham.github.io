@@ -10,7 +10,7 @@ const urlsToCache = [
   "/phojo/icons/icon-512x512.png",
   "/phojo/icons/maskable-icon-192x192.png",
   "/phojo/icons/maskable-icon-512x512.png",
-  "/phojo/assets/index-XNHu0WcQ.js",
+  "/phojo/assets/index-DcQFn9VX.js",
   "/phojo/assets/index-Cxp37pTo.css"
 ];
 
