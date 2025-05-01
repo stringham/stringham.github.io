@@ -1,6 +1,9 @@
 const CACHE_NAME = 'phojo-cache-v1';
-// Make sure share-target isn't cached by the generic handler
 const SHARE_TARGET_ACTION = '/phojo/share-target';
+const IDB_NAME = 'phojo-shared-files';
+const IDB_VERSION = 1;
+const IDB_STORE_NAME = 'sharedFiles';
+
 const urlsToCache = [
   "/phojo/",
   "/phojo/index.html",
@@ -10,9 +13,72 @@ const urlsToCache = [
   "/phojo/icons/icon-512x512.png",
   "/phojo/icons/maskable-icon-192x192.png",
   "/phojo/icons/maskable-icon-512x512.png",
-  "/phojo/assets/index-DcQFn9VX.js",
-  "/phojo/assets/index-Cxp37pTo.css"
+  "/phojo/assets/index-Cxp37pTo.css",
+  "/phojo/assets/index-BiYS_jHz.js"
 ];
+
+// --- IndexedDB Helpers ---
+function openDB() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(IDB_NAME, IDB_VERSION);
+        request.onerror = (event) => reject(`IndexedDB error: ${request.error}`);
+        request.onsuccess = (event) => resolve(request.result);
+        request.onupgradeneeded = (event) => {
+            const db = request.result;
+            if (!db.objectStoreNames.contains(IDB_STORE_NAME)) {
+                db.createObjectStore(IDB_STORE_NAME, {keyPath: 'key'});
+                console.log('[Service Worker] IndexedDB store created.');
+            }
+        };
+    });
+}
+
+async function storeFiles(key, files) {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(IDB_STORE_NAME, 'readwrite');
+        const store = transaction.objectStore(IDB_STORE_NAME);
+        // Overwrite if key already exists
+        const request = store.put({key: key, files: files, timestamp: Date.now()});
+        request.onsuccess = resolve;
+        request.onerror = (event) => reject(`Error storing files: ${request.error}`);
+        transaction.oncomplete = () => {
+            console.log(`[SW IDB] Stored files for key ${key}`);
+            db.close();
+        };
+        transaction.onerror = (event) => reject(`Transaction error storing files: ${transaction.error}`);
+    });
+}
+
+async function getFiles(key) {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(IDB_STORE_NAME, 'readonly');
+        const store = transaction.objectStore(IDB_STORE_NAME);
+        const request = store.get(key);
+        request.onsuccess = () => resolve(request.result ? request.result.files : null);
+        request.onerror = (event) => reject(`Error getting files: ${request.error}`);
+        transaction.oncomplete = () => db.close();
+        transaction.onerror = (event) => reject(`Transaction error getting files: ${transaction.error}`);
+    });
+}
+
+async function deleteFiles(key) {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(IDB_STORE_NAME, 'readwrite');
+        const store = transaction.objectStore(IDB_STORE_NAME);
+        const request = store.delete(key);
+        request.onsuccess = resolve;
+        request.onerror = (event) => reject(`Error deleting files: ${request.error}`);
+        transaction.oncomplete = () => {
+            console.log(`[SW IDB] Deleted files for key ${key}`);
+            db.close();
+        };
+        transaction.onerror = (event) => reject(`Transaction error deleting files: ${transaction.error}`);
+    });
+}
+// --- End IndexedDB Helpers ---
 
 self.addEventListener('install', (event) => {
     console.log('[Service Worker] Install');
@@ -23,12 +89,12 @@ self.addEventListener('install', (event) => {
                 console.log('[Service Worker] Opened cache:', CACHE_NAME);
                 const validUrlsToCache = urlsToCache.filter((url) => typeof url === 'string');
                 return cache.addAll(validUrlsToCache).catch((error) => {
-                    console.error('[Service Worker] Failed to cache initial assets:', error);
+                    console.error('[Service Worker] Failed cache initial assets:', error);
                     throw error;
                 });
             })
             .then(() => {
-                console.log('[Service Worker] Core assets cached successfully.');
+                console.log('[Service Worker] Core assets cached.');
                 return self.skipWaiting();
             })
             .catch((error) => {
@@ -45,13 +111,8 @@ self.addEventListener('activate', (event) => {
             .then((cacheNames) => {
                 return Promise.all(
                     cacheNames
-                        .filter((cacheName) => {
-                            return cacheName !== CACHE_NAME;
-                        })
-                        .map((cacheName) => {
-                            console.log('[Service Worker] Deleting old cache:', cacheName);
-                            return caches.delete(cacheName);
-                        }),
+                        .filter((cacheName) => cacheName !== CACHE_NAME)
+                        .map((cacheName) => caches.delete(cacheName)),
                 );
             })
             .then(() => {
@@ -61,91 +122,128 @@ self.addEventListener('activate', (event) => {
     );
 });
 
+// Fetch handler for Share Target POST
 self.addEventListener('fetch', (event) => {
     const url = new URL(event.request.url);
 
-    // Handle Share Target POST request
     if (event.request.method === 'POST' && url.pathname === SHARE_TARGET_ACTION) {
-        console.log('[Service Worker] Share Target request received.');
+        console.log('[Service Worker] Share Target POST request received.');
         event.respondWith(
             (async () => {
                 try {
                     const formData = await event.request.formData();
-                    const files = formData.getAll('shared_files'); // Name matches manifest.json params
-                    console.log(`[Service Worker] Received ${files.length} files from share.`);
+                    const files = formData.getAll('shared_files'); // Name matches manifest.json
+                    console.log(`[Service Worker] Received ${files.length} file(s) from share.`);
 
-                    if (files.length === 0) {
+                    if (!files || files.length === 0) {
                         console.log('[Service Worker] No files found in share.');
-                        // Redirect to the app root immediately if no files
                         return Response.redirect('/phojo/', 303);
                     }
 
-                    // Get all clients
-                    const allClients = await self.clients.matchAll({includeUncontrolled: true});
-                    let client = allClients.find((c) => c.url.endsWith('/phojo/') && 'focus' in c); // Find a suitable client
+                    // Always store files with a unique key
+                    const shareKey = `share-${Date.now()}`;
+                    await storeFiles(shareKey, files);
+                    console.log(`[Service Worker] Files stored in IndexedDB with key: ${shareKey}`);
 
-                    if (client) {
-                        console.log('[Service Worker] Found existing client, focusing and sending files...');
-                        await client.focus(); // Focus the existing window
-                        client.postMessage({type: 'SHARED_FILES', files: files});
+                    // Try to find an active client *after* storing files
+                    const clients = await self.clients.matchAll({type: 'window', includeUncontrolled: true});
+                    const appClient = clients.find((c) => c.url.startsWith(self.registration.scope)); // Find any client in scope
+
+                    if (appClient) {
+                        console.log('[Service Worker] Found active client. Sending SHARED_FILES_READY message.');
+                        // If client exists, inform it that files are ready with the key
+                        appClient.postMessage({type: 'SHARED_FILES_READY', key: shareKey});
+                        if ('focus' in appClient) await appClient.focus(); // Attempt to focus
                     } else {
-                        console.log('[Service Worker] No suitable client found, opening new window...');
-                        // If no client found, open a new window/tab.
-                        // Opening the window first, then sending the message ensures the listener might be ready.
-                        client = await self.clients.openWindow('/phojo/');
-                        if (client) {
-                            // Short delay to allow the new window to potentially set up its listener
-                            await new Promise((resolve) => setTimeout(resolve, 500));
-                            console.log('[Service Worker] Sending files to newly opened client...');
-                            client.postMessage({type: 'SHARED_FILES', files: files});
-                        } else {
-                            console.error('[Service Worker] Failed to open a new window.');
-                            // Fallback or error handling needed here
-                        }
+                        console.log('[Service Worker] No active client found by matchAll.');
+                        // No need to show notification here. The redirect will launch the app.
                     }
 
-                    // Redirect the service worker fetch response to the main app page
-                    // This happens after the message is sent.
-                    return Response.redirect('/phojo/', 303);
+                    // Always redirect to the main app URL with the key in the fragment.
+                    // The app will check the fragment on load.
+                    const redirectUrl = `/phojo/#shareKey=${shareKey}`;
+                    console.log(`[Service Worker] Redirecting to: ${redirectUrl}`);
+                    return Response.redirect(redirectUrl, 303);
                 } catch (error) {
                     console.error('[Service Worker] Error handling share target request:', error);
-                    // Redirect on error too, maybe with an error parameter?
+                    // Redirect on error, maybe indicate error in URL?
                     return Response.redirect('/phojo/?share_error=true', 303);
                 }
             })(),
         );
-        return; // Stop processing this fetch event here
+        return; // Important: Stop further processing for this request
     }
 
-    // Default Cache-First strategy for GET requests (excluding share target)
-    if (event.request.method === 'GET' && url.pathname !== SHARE_TARGET_ACTION) {
+    // Default Cache-First strategy for GET requests
+    if (event.request.method === 'GET') {
         event.respondWith(
-            caches.match(event.request).then((response) => {
-                if (response) {
-                    return response;
-                }
-
-                const fetchRequest = event.request.clone();
-
-                return fetch(fetchRequest)
-                    .then((response) => {
-                        if (!response || response.status !== 200 || response.type !== 'basic') {
-                            return response;
-                        }
-
+            caches
+                .match(event.request)
+                .then((response) => {
+                    if (response) return response;
+                    const fetchRequest = event.request.clone();
+                    return fetch(fetchRequest).then((response) => {
+                        if (!response || response.status !== 200 || response.type !== 'basic') return response;
                         const responseToCache = response.clone();
-                        caches.open(CACHE_NAME).then((cache) => {
-                            cache.put(event.request, responseToCache);
-                        });
-
+                        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseToCache));
                         return response;
-                    })
-                    .catch((error) => {
-                        console.error(`[Service Worker] Fetch failed for: ${event.request.url}`, error);
-                        // Consider returning an offline page here if appropriate
-                        throw error;
                     });
-            }),
+                })
+                .catch((error) => {
+                    console.error(`[Service Worker] GET Fetch failed for: ${event.request.url}`, error);
+                    throw error; // Or return offline page
+                }),
         );
+    }
+});
+
+// --- REMOVED notificationclick handler ---
+
+// Message handler for client requests (GET_STORED_FILES)
+self.addEventListener('message', (event) => {
+    console.log('[Service Worker] Message received from client:', event.data);
+    if (event.data && event.data.type === 'GET_STORED_FILES') {
+        const key = event.data.key;
+        const clientId = event.source?.id;
+
+        if (!key || !clientId) {
+            console.error('[Service Worker] Invalid GET_STORED_FILES message:', event.data);
+            return;
+        }
+
+        console.log(`[Service Worker] Client ${clientId} requested files for key: ${key}`);
+
+        event.waitUntil(
+            (async () => {
+                const client = await self.clients.get(clientId);
+                if (!client) {
+                    console.error(`[Service Worker] Client ${clientId} not found.`);
+                    return;
+                }
+                try {
+                    const files = await getFiles(key);
+                    if (files) {
+                        console.log(
+                            `[Service Worker] Found ${files.length} files in IDB for key ${key}. Sending to client ${clientId}.`,
+                        );
+                        client.postMessage({type: 'STORED_FILES_DATA', key: key, files: files});
+                        await deleteFiles(key); // Delete after sending
+                        console.log(`[Service Worker] Deleted files from IDB for key ${key}.`);
+                    } else {
+                        console.warn(`[Service Worker] No files found in IDB for key ${key}. Sending empty array.`);
+                        client.postMessage({type: 'STORED_FILES_DATA', key: key, files: []});
+                        // Optionally delete the empty key entry if it somehow exists
+                        await deleteFiles(key).catch(() => {});
+                    }
+                } catch (error) {
+                    console.error(`[Service Worker] Error processing GET_STORED_FILES for key ${key}:`, error);
+                    client.postMessage({type: 'STORED_FILES_ERROR', key: key, error: error.message || 'Unknown error'});
+                    // Attempt cleanup even on error
+                    await deleteFiles(key).catch((e) => console.error('Error deleting files after error:', e));
+                }
+            })(),
+        );
+    } else {
+        console.log('[Service Worker] Received unhandled message type:', event.data?.type);
     }
 });
