@@ -7,6 +7,8 @@ class Cropper {
         this.container.style.margin = '10px';
         parent.appendChild(this.container);
 
+        this.fileName = file.name;
+
         // Create the canvas
         this.canvas = document.createElement('canvas');
         this.ctx = this.canvas.getContext('2d');
@@ -67,6 +69,7 @@ class Cropper {
                 this.time = await getTime(this.img, this.name);
                 this.exifOrientation = await getExifOrientation(this.img);
             } finally {
+                this.load();
                 this.render();
             }
         };
@@ -79,6 +82,28 @@ class Cropper {
         document.addEventListener('mouseup', this.mouseup.bind(this));
         this.canvas.addEventListener('wheel', this.mousewheel.bind(this));
         this.canvas.addEventListener('dblclick', this.editTimestamp.bind(this));
+    }
+
+    getId() {
+        return [this.fileName, this.maxImgSize].join(',');
+    }
+
+    save() {
+        localStorage.setItem(this.getId(), JSON.stringify({
+            position: this.position,
+            imgSize: this.imgSize,
+            time: this.time
+        }));
+    }
+
+    load() {
+        const data = JSON.parse(localStorage.getItem(this.getId()));
+        if (data) {
+            this.position = data.position;
+            this.imgSize = data.imgSize;
+            this.time = data.time;
+            this.render();
+        }
     }
 
     modifyRotation() {
@@ -159,6 +184,7 @@ class Cropper {
         this.position.x += (oldImgSize - this.imgSize) / 2;
         this.position.y += (oldImgSize - this.imgSize) / 2;
         this.render();
+        this.save();
     }
 
     render() {
@@ -238,6 +264,7 @@ class Cropper {
             this.position.x = Math.min(this.width - this.imgSize, Math.max(0, this.position.x));
             this.position.y = Math.min(this.height - this.imgSize, Math.max(0, this.position.y));
             this.offset = { x: 0, y: 0 };
+            this.save();
             this.render();
         }
     }
@@ -270,6 +297,7 @@ class Cropper {
             }
             document.body.removeChild(input);
             this.render(); // Re-render the cropper to update the timestamp
+            this.save();
         });
 
         input.addEventListener('keydown', (event) => {
