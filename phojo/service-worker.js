@@ -13,12 +13,8 @@ const urlsToCache = [
   "/phojo/icons/icon-512x512.png",
   "/phojo/icons/maskable-icon-192x192.png",
   "/phojo/icons/maskable-icon-512x512.png",
-  "/phojo/assets/index-qORmKFEH.css",
-  "/phojo/assets/index-DNt58iEa.css",
-  "/phojo/assets/index-CnUg8kJl.js",
-  "/phojo/assets/index-CA745Qv7.js",
-  "/phojo/assets/index-B7HUinlc.js",
-  "/phojo/assets/index-4sR5HqtB.css"
+  "/phojo/assets/index-CHumN3X6.js",
+  "/phojo/assets/index-Bgrkjt0h.css"
 ];
 
 // --- IndexedDB Helpers ---
