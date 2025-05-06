@@ -4,43 +4,43 @@
     "description": "Your personal photo journal.",
     "icons": [
         {
-            "src": "/phojo/logo.svg",
+            "src": "logo.svg",
             "type": "image/svg+xml",
             "sizes": "any",
             "purpose": "any"
         },
         {
-            "src": "/phojo/icons/icon-192x192.png",
+            "src": "icons/icon-192x192.png",
             "type": "image/png",
             "sizes": "192x192",
             "purpose": "any"
         },
         {
-            "src": "/phojo/icons/icon-512x512.png",
+            "src": "icons/icon-512x512.png",
             "type": "image/png",
             "sizes": "512x512",
             "purpose": "any"
         },
         {
-            "src": "/phojo/icons/maskable-icon-192x192.png",
+            "src": "icons/maskable-icon-192x192.png",
             "type": "image/png",
             "sizes": "192x192",
             "purpose": "maskable"
         },
         {
-            "src": "/phojo/icons/maskable-icon-512x512.png",
+            "src": "icons/maskable-icon-512x512.png",
             "type": "image/png",
             "sizes": "512x512",
             "purpose": "maskable"
         }
     ],
-    "start_url": "/phojo/",
+    "start_url": "./",
     "display": "standalone",
     "background_color": "#ffffff",
     "theme_color": "#2094f3",
-    "scope": "/phojo/",
+    "scope": "./",
     "share_target": {
-        "action": "/phojo/share-target",
+        "action": "share-target",
         "method": "POST",
         "enctype": "multipart/form-data",
         "params": {
