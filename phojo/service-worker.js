@@ -4,7 +4,7 @@ const IDB_VERSION = 1;
 const IDB_STORE_NAME = 'sharedFiles';
 
 // Get the base path - different in dev (/) vs production (/phojo/)
-const BASE_PATH = self.location.pathname.includes('/phojo/') ? '/phojo' : '';
+const BASE_PATH = self.location.pathname.includes('/phojo/') || self.location.pathname.endsWith('/phojo') ? '/phojo' : '';
 
 // Share target action path - should match manifest.json
 const SHARE_TARGET_ACTION = `${BASE_PATH}/share-target`;
@@ -19,42 +19,9 @@ const urlsToCache = [
   "/phojo/icons/icon-512x512.png",
   "/phojo/icons/maskable-icon-192x192.png",
   "/phojo/icons/maskable-icon-512x512.png",
-  "/phojo/assets/index-zGj8Uokk.js",
-  "/phojo/assets/index-qIIVI7R8.js",
-  "/phojo/assets/index-pCX_r_t4.js",
-  "/phojo/assets/index-liLqtXbU.js",
-  "/phojo/assets/index-lXWM0iuV.js",
-  "/phojo/assets/index-UxqWxYeG.js",
-  "/phojo/assets/index-U028rSLC.css",
-  "/phojo/assets/index-EPm1zgET.js",
-  "/phojo/assets/index-DP0nzDUP.js",
-  "/phojo/assets/index-DEbJM2Te.js",
-  "/phojo/assets/index-D4dhR-fs.js",
-  "/phojo/assets/index-Cj5wVaG5.js",
-  "/phojo/assets/index-Ca7036l_.js",
-  "/phojo/assets/index-CTUV96d-.js",
-  "/phojo/assets/index-CTREGu9A.js",
-  "/phojo/assets/index-CEIr0hVW.css",
-  "/phojo/assets/index-C7GX1bqj.js",
-  "/phojo/assets/index-C65jAliK.js",
-  "/phojo/assets/index-C5nEGUc1.js",
-  "/phojo/assets/index-C3mNLrfD.js",
-  "/phojo/assets/index-C-0_iUsQ.js",
-  "/phojo/assets/index-BqXM18Vz.js",
-  "/phojo/assets/index-Bgrkjt0h.css",
-  "/phojo/assets/index-BgkwmW66.css",
-  "/phojo/assets/index-BgD5-vld.js",
-  "/phojo/assets/index-Bfl9sFVx.js",
-  "/phojo/assets/index-BVGdMiUH.js",
-  "/phojo/assets/index-BUd_m7Rd.js",
-  "/phojo/assets/index-BTPACxLu.js",
-  "/phojo/assets/index-BQxerfYS.js",
-  "/phojo/assets/index-BB0K5U1E.js",
-  "/phojo/assets/index-B9uf4zL3.js",
-  "/phojo/assets/index-B9BaxJOj.js",
-  "/phojo/assets/index-B-_f20_5.js",
-  "/phojo/assets/index-8emBWflu.js",
-  "/phojo/assets/index-3_q7nCsR.js"
+  "/phojo/assets/index-CaNDJtp_.css",
+  "/phojo/assets/index-BUwXxRc0.js",
+  "/phojo/assets/index-9IGrBPiU.js"
 ];
 
 // --- IndexedDB Helpers ---
