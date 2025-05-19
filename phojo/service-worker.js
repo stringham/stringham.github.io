@@ -21,7 +21,8 @@ const urlsToCache = [
   "/phojo/icons/maskable-icon-192x192.png",
   "/phojo/icons/maskable-icon-512x512.png",
   "/phojo/assets/index-DG1aVRbm.css",
-  "/phojo/assets/index-BBwJ27Ec.js"
+  "/phojo/assets/index-BBwJ27Ec.js",
+  "/phojo/assets/index-BBILc8-8.js"
 ];
 
 // --- IndexedDB Helpers ---
