@@ -4,7 +4,8 @@ const IDB_VERSION = 1;
 const IDB_STORE_NAME = 'sharedFiles';
 
 // Get the base path - different in dev (/) vs production (/phojo/)
-const BASE_PATH = self.location.pathname.includes('/phojo/') || self.location.pathname.endsWith('/phojo') ? '/phojo' : '';
+const BASE_PATH =
+    self.location.pathname.includes('/phojo/') || self.location.pathname.endsWith('/phojo') ? '/phojo' : '';
 
 // Share target action path - should match manifest.json
 const SHARE_TARGET_ACTION = `${BASE_PATH}/share-target`;
@@ -19,9 +20,8 @@ const urlsToCache = [
   "/phojo/icons/icon-512x512.png",
   "/phojo/icons/maskable-icon-192x192.png",
   "/phojo/icons/maskable-icon-512x512.png",
-  "/phojo/assets/index-CaNDJtp_.css",
-  "/phojo/assets/index-BUwXxRc0.js",
-  "/phojo/assets/index-9IGrBPiU.js"
+  "/phojo/assets/index-DG1aVRbm.css",
+  "/phojo/assets/index-BBwJ27Ec.js"
 ];
 
 // --- IndexedDB Helpers ---
