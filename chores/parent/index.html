@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chore App - Parent Configuration</title>
+    <link rel="stylesheet" href="style.css"> <meta name="theme-color" content="#2c3e50"> <script>
+        function gisParentLoaded() {
+            console.log("Global gisParentLoaded() in parent/index.html called.");
+            if (window.parentApp && typeof window.parentApp.onGisLoad === 'function') {
+                window.parentApp.onGisLoad();
+            } else {
+                console.warn("parentApp.onGisLoad was not ready. Retrying...");
+                setTimeout(() => {
+                    if (window.parentApp && typeof window.parentApp.onGisLoad === 'function') {
+                        window.parentApp.onGisLoad();
+                    } else { console.error("parentApp.onGisLoad still not available."); }
+                }, 200);
+            }
+        }
+
+        function gapiClientParentLoaded() {
+            console.log("Global gapiClientParentLoaded() in parent/index.html called.");
+            if (window.parentApp && typeof window.parentApp.onGapiClientLoad === 'function') {
+                window.parentApp.onGapiClientLoad();
+            } else {
+                 console.warn("parentApp.onGapiClientLoad was not ready. Retrying...");
+                setTimeout(() => {
+                    if (window.parentApp && typeof window.parentApp.onGapiClientLoad === 'function') {
+                        window.parentApp.onGapiClientLoad();
+                    } else { console.error("parentApp.onGapiClientLoad still not available."); }
+                }, 200);
+            }
+        }
+    </script>
+
+    <script src="https://accounts.google.com/gsi/client" async defer onload="gisParentLoaded()"></script>
+    <script async defer src="https://apis.google.com/js/api.js" onload="gapiClientParentLoaded()"></script>
+</head>
+<body>
+    <div id="parentAppContainer">
+        <header>
+            <h1>Parent Dashboard - Chore Management</h1>
+        </header>
+
+        <section id="authSection" class="config-section">
+            <h2>Authentication</h2>
+            <button id="parentAuthorizeButton">Connect & Authorize Google Account</button>
+            <button id="parentSignoutButton" style="display:none;">Sign Out</button>
+            <div id="parentAuthFeedback" class="feedback-area"></div>
+            <div class="sheet-id-input-container">
+                <label for="parentSheetIdInput">Google Sheet ID:</label>
+                <input type="text" id="parentSheetIdInput" placeholder="Enter Google Sheet ID">
+                <button id="parentSaveSheetIdButton">Save Sheet ID</button>
+            </div>
+        </section>
+
+        <main id="parentMainContent" style="display:none;"> <section id="childSelectionSection" class="config-section">
+                <h2>Select Child to Configure</h2>
+                <select id="childSelector">
+                    <option value="">-- Select Child --</option>
+                    </select>
+            </section>
+
+            <div id="childConfigurationArea" style="display:none;"> <h2 id="selectedChildNameDisplay"></h2>
+
+                <section id="choreManagementSection" class="config-section">
+                    <h3>Manage Chores</h3>
+                    <ul id="choreListEditor">
+                        </ul>
+                    <div class="add-chore-form">
+                        <input type="text" id="newChoreInput" placeholder="New chore description">
+                        <button id="addChoreButton">Add Chore</button>
+                    </div>
+                    <button id="saveChoreListButton">Save All Chore Changes for <span class="dynamic-child-name">Child</span></button>
+                    <div id="choreMgmtFeedback" class="feedback-area"></div>
+                </section>
+
+                <section id="allowanceManagementSection" class="config-section">
+                    <h3>Manage Allowance</h3>
+                    <p>Current allowance chore count: <strong id="currentAllowanceCountDisplay">N/A</strong></p>
+                    <p>Equivalent value: <strong id="currentAllowanceValueDisplay">$0.00</strong></p>
+                    <button id="resetAllowanceButton">Mark Allowance Paid (Reset Count to 0)</button>
+                    <div id="allowanceMgmtFeedback" class="feedback-area"></div>
+                </section>
+            </div>
+        </main>
+        <div id="parentLoadingIndicator" class="feedback-area" style="display:none;">Loading...</div>
+        <div id="parentErrorDisplay" class="feedback-area error-message" style="display:none;"></div>
+
+    </div>
+
+    <script src="../config.js"></script> <script src="../auth.js"></script>   <script src="../sheetsService.js"></script> <script src="parent.js"></script>    </body>
+</html>

@@ -1,0 +1,148 @@
+/* parent/style.css */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f0f2f5; /* Light grey background */
+    color: #333;
+    margin: 0;
+    padding: 20px;
+    line-height: 1.6;
+}
+
+#parentAppContainer {
+    max-width: 800px;
+    margin: 20px auto;
+    background-color: #fff;
+    padding: 20px 30px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+header {
+    text-align: center;
+    margin-bottom: 30px;
+    border-bottom: 1px solid #e0e0e0;
+    padding-bottom: 20px;
+}
+
+header h1 {
+    color: #2c3e50; /* Dark blue-grey */
+    font-size: 1.8em;
+}
+
+.config-section {
+    margin-bottom: 30px;
+    padding: 20px;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    background-color: #fdfdfd;
+}
+
+.config-section h2, .config-section h3 {
+    margin-top: 0;
+    color: #34495e; /* Another shade of blue-grey */
+    border-bottom: 1px solid #ecf0f1;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #555;
+}
+
+input[type="text"], select {
+    width: calc(100% - 22px); /* Full width minus padding/border */
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 1em;
+}
+select {
+    width: 100%; /* Select to take full width of its container */
+    cursor: pointer;
+}
+
+button {
+    background-color: #3498db; /* Primary blue */
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1em;
+    margin-right: 5px;
+    transition: background-color 0.2s ease;
+}
+button:hover {
+    background-color: #2980b9; /* Darker blue */
+}
+#parentSignoutButton {
+    background-color: #e74c3c; /* Red for signout/destructive */
+}
+#parentSignoutButton:hover {
+    background-color: #c0392b;
+}
+
+.sheet-id-input-container {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px dashed #ccc;
+}
+
+
+#choreListEditor {
+    list-style-type: none;
+    padding: 0;
+}
+#choreListEditor li {
+    display: flex;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+#choreListEditor li:last-child {
+    border-bottom: none;
+}
+#choreListEditor li span:first-child {
+    flex-grow: 1;
+}
+#choreListEditor li .edit-chore-input {
+    flex-grow: 1;
+    margin-right: 10px;
+}
+#choreListEditor button {
+    margin-left: 5px;
+    padding: 5px 10px;
+    font-size: 0.9em;
+}
+.delete-chore-btn {
+    background-color: #f39c12; /* Orange for delete/warning */
+}
+.delete-chore-btn:hover {
+    background-color: #e67e22;
+}
+
+
+.add-chore-form {
+    margin-top: 15px;
+    display: flex;
+}
+.add-chore-form input[type="text"] {
+    flex-grow: 1;
+    margin-right: 10px;
+    margin-bottom: 0;
+}
+
+.feedback-area {
+    margin-top: 10px;
+    padding: 10px;
+    border-radius: 4px;
+    font-size: 0.9em;
+}
+.error-message { background-color: #ffebee; color: #c62828; border: 1px solid #ef9a9a;}
+.success-message { background-color: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7;}
+.hidden { display: none !important; }

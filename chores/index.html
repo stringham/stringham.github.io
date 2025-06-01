@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kids Chore Tracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4CAF50">
+
+    <script>
+        // Called when GIS library (accounts.google.com/gsi/client) is loaded
+        function gisLoaded() {
+            console.log("Global gisLoaded() in index.html head called.");
+            if (window.main && typeof window.main.onGisLoad === 'function') {
+                window.main.onGisLoad();
+            } else {
+                // This fallback is less likely to be needed now with head placement,
+                // but good for robustness if main.js loads much later for some reason.
+                console.warn("main.onGisLoad was not ready when gisLoaded was called from head. Retrying in 100ms.");
+                setTimeout(() => {
+                     if (window.main && typeof window.main.onGisLoad === 'function') {
+                        window.main.onGisLoad();
+                    } else {
+                        console.error("main.onGisLoad still not available after delay. GIS init might fail.");
+                    }
+                }, 100);
+            }
+        }
+
+        // Called when GAPI client library (apis.google.com/js/api.js) is loaded
+        function gapiClientLoaded() {
+            console.log("Global gapiClientLoaded() in index.html head called.");
+            if (window.main && typeof window.main.onGapiClientLoad === 'function') {
+                window.main.onGapiClientLoad();
+            } else {
+                console.warn("main.onGapiClientLoad was not ready when gapiClientLoaded was called from head. Retrying in 100ms.");
+                setTimeout(() => {
+                     if (window.main && typeof window.main.onGapiClientLoad === 'function') {
+                        window.main.onGapiClientLoad();
+                    } else {
+                        console.error("main.onGapiClientLoad still not available after delay. GAPI client init might fail.");
+                    }
+                }, 100);
+            }
+        }
+    </script>
+
+    <script src="https://accounts.google.com/gsi/client" async defer onload="gisLoaded()"></script>
+    <script async defer src="https://apis.google.com/js/api.js" onload="gapiClientLoaded()"></script>
+
+</head>
+<body>
+    <div id="appContainer">
+        <div id="parentSetupView" class="view-container" style="display:none;">
+            <h2>Welcome! Let's Set Up Your Chore Chart</h2>
+            <p>Please enter the Google Sheet ID for your chore chart below.</p>
+            <p><em>Important: After authorizing, ensure the Google Sheet is shared with the email address you used to authorize this app, giving it "Editor" permissions.</em></p>
+            <div>
+                <label for="sheetIdInput">Google Sheet ID:</label>
+                <input type="text" id="sheetIdInput" placeholder="Enter Google Sheet ID">
+            </div>
+            <button id="authorizeGisButton">Connect & Authorize Google Account</button>
+            <button id="saveSheetIdButton" style="display:none;">Save Sheet ID & Load Chores</button>
+            <button id="signoutGisButton" style="display:none;">Sign Out / Change Account</button>
+            <div id="setupFeedback" class="feedback-area"></div>
+        </div>
+
+        <div id="mainAppView" class="view-container" style="display:none;">
+            <div id="childTabsContainer" class="tabs-container">
+                </div>
+            <div id="childInfoArea" class="info-area">
+                <h3 id="currentChildTitle"></h3> <p id="allowanceInfo"></p> </div>
+            <div id="choreDisplayArea" class="chore-grid-container">
+                <div class="chore-grid-header">
+                    <span class="chore-description-header">Chore Description</span>
+                    <span id="yesterdayHeader" class="chore-date-header">Yesterday (YYYY-MM-DD)</span>
+                    <span id="todayHeader" class="chore-date-header">Today (YYYY-MM-DD)</span>
+                </div>
+                <ul id="choreList" class="chore-list">
+                    </ul>
+            </div>
+            <div id="loadingIndicator" class="feedback-area" style="display:none;">Loading chores...</div>
+            <div id="errorDisplay" class="feedback-area error-message" style="display:none;"></div>
+        </div>
+    </div> <script src="config.js"></script>
+    <script src="auth.js"></script>
+    <script src="sheetsService.js"></script>
+    <script src="ui.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>

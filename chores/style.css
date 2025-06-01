@@ -1,0 +1,285 @@
+/* General Styles */
+body {
+    font-family: 'Nunito', 'Arial', sans-serif; /* Using Nunito as a kid-friendly example, ensure it's imported or web-safe */
+    margin: 0;
+    padding: 20px;
+    background-color: #43cfc7; /* Main new teal background */
+    color: #333; /* Default text color for content on light backgrounds */
+    line-height: 1.6;
+    font-size: 16px;
+}
+
+#appContainer {
+    max-width: 900px;
+    margin: auto;
+    background-color: #ffffff; /* White container contrasts well with teal */
+    padding: 25px; /* Slightly more padding */
+    border-radius: 12px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15); /* Slightly deeper shadow */
+}
+
+.view-container {
+    padding: 15px;
+}
+
+h2, h3 {
+    color: #004d40; /* Darker, rich teal for headers */
+    margin-top: 0;
+}
+
+h2 {
+    font-size: 1.8em;
+    margin-bottom: 20px;
+}
+
+h3 {
+    font-size: 1.6em;
+}
+
+button {
+    background-color: #FF6F61; /* Coral/Orange-Red for primary buttons - good contrast with teal */
+    color: white;
+    border: none;
+    padding: 12px 20px; /* Larger buttons */
+    border-radius: 8px; /* More rounded buttons */
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: bold;
+    margin: 8px 5px;
+    transition: background-color 0.2s ease-in-out, transform 0.1s ease;
+}
+button:hover {
+    background-color: #e65a50; /* Darker coral on hover */
+    transform: translateY(-1px);
+}
+button:disabled {
+    background-color: #cccccc;
+    color: #777777;
+    cursor: not-allowed;
+    transform: none;
+}
+
+input[type="text"],
+input[type="password"],
+input[type="email"] {
+    padding: 12px;
+    border-radius: 6px;
+    border: 1px solid #b0bec5; /* Softer grey border */
+    margin: 5px 0 15px 0;
+    font-size: 1em;
+    width: calc(100% - 26px);
+    max-width: 400px;
+    box-sizing: border-box; /* Ensure padding doesn't expand width */
+}
+input[type="text"]:focus {
+    border-color: #00796b; /* Darker teal focus */
+    box-shadow: 0 0 0 2px rgba(0, 121, 107, 0.2);
+}
+
+label {
+    font-weight: bold;
+    display: block;
+    margin-bottom: 5px;
+    color: #004d40; /* Dark teal for labels */
+}
+
+.feedback-area {
+    margin-top: 15px;
+    padding: 12px;
+    border-radius: 6px;
+    font-size: 0.95em;
+}
+.error-message {
+    background-color: #ffebee; /* Lighter red for errors */
+    color: #c62828; /* Darker red text */
+    border: 1px solid #ef9a9a;
+}
+.success-message {
+    background-color: #e8f5e9; /* Lighter green for success */
+    color: #2e7d32; /* Darker green text */
+    border: 1px solid #a5d6a7;
+}
+.hidden {
+    display: none !important;
+}
+
+/* Parent Setup View */
+#parentSetupView div {
+    margin-bottom: 18px;
+}
+#parentSetupView p {
+    font-size: 1em;
+    color: #546e7a; /* Softer text color */
+}
+#parentSetupView em {
+    font-style: italic;
+    color: #78909c;
+}
+#signoutGisButton { /* Style signout differently if needed */
+    background-color: #78909c; /* Grey for secondary action */
+}
+#signoutGisButton:hover {
+    background-color: #546e7a;
+}
+
+
+/* Main App View */
+.tabs-container {
+    display: flex;
+    flex-wrap: wrap;
+    margin-bottom: 25px;
+    border-bottom: 3px solid #00796b; /* Darker teal accent for tab underline */
+}
+
+.child-tab {
+    background-color: #e0f2f1; /* Very light teal for inactive tabs */
+    color: #004d40; /* Dark teal text */
+    border: 1px solid #b2dfdb; /* Light teal border */
+    border-bottom: none;
+    padding: 12px 20px;
+    cursor: pointer;
+    border-radius: 10px 10px 0 0; /* More rounded top corners */
+    margin-right: 6px;
+    margin-bottom: -1px; /* Adjust to sit on the border nicely */
+    font-size: 1.05em;
+    font-weight: 600; /* Semi-bold */
+    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+}
+.child-tab.active-tab {
+    background-color: #00796b; /* Darker teal for active tab background */
+    color: white;
+    border-color: #00796b;
+}
+.child-tab:not(.active-tab):hover {
+    background-color: #b2dfdb; /* Light teal hover for inactive tabs */
+}
+
+.info-area {
+    text-align: center;
+    margin-bottom: 30px;
+    padding: 15px;
+    background-color: #e0f7fa; /* Very light cyan/blue background */
+    border-radius: 8px;
+}
+#currentChildTitle {
+    margin-bottom: 8px;
+    font-size: 2em; /* Prominent child name */
+    color: #006064; /* Dark Cyan */
+}
+#allowanceInfo {
+    font-size: 1.3em;
+    font-weight: bold;
+    color: #FF8F00; /* Amber/Orange for allowance text - good contrast */
+}
+#allowanceInfo strong {
+    color: #D84315; /* Deep Orange for numbers */
+}
+
+/* Chore Grid */
+.chore-grid-container {
+    margin-top: 20px;
+}
+.chore-grid-header {
+    display: grid;
+    grid-template-columns: minmax(150px, 3fr) 1fr 1fr;
+    font-weight: bold;
+    padding: 14px 10px;
+    background-color: #b2dfdb; /* Light teal for header background */
+    color: #004d40; /* Dark teal text */
+    border-radius: 10px 10px 0 0;
+    border-bottom: 2px solid #80cbc4; /* Slightly darker teal border */
+    align-items: center;
+}
+.chore-description-header {
+    text-align: left;
+    padding-left: 5px;
+}
+.chore-date-header {
+    text-align: center;
+    font-size: 0.95em;
+}
+.chore-list {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    border: 1px solid #b2dfdb; /* Light teal border */
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+    background-color: #f7f9f9; /* Very light off-white for list background */
+}
+.chore-item {
+    display: grid;
+    grid-template-columns: minmax(150px, 3fr) 1fr 1fr;
+    align-items: center;
+    padding: 18px 10px; /* More padding for each item */
+    border-bottom: 1px solid #e0f2f1; /* Lighter teal separator */
+    transition: background-color 0.2s ease-in-out;
+}
+.chore-item:hover {
+    background-color: #e0f7fa; /* Light cyan hover */
+}
+.chore-item:last-child {
+    border-bottom: none;
+}
+.chore-name {
+    word-break: break-word;
+    padding-left: 5px;
+    font-size: 1.05em;
+    color: #37474f; /* Darker grey-blue for chore text */
+}
+.chore-checkbox-cell {
+    text-align: center;
+}
+.chore-checkbox-cell input[type="checkbox"] {
+    transform: scale(1.6); /* Even larger checkboxes */
+    cursor: pointer;
+    margin: 0;
+    accent-color: #00796b; /* Checkbox color to match theme */
+}
+.chore-item .chore-name.completed {
+    text-decoration: line-through;
+    color: #90a4ae; /* Softer grey for completed chores */
+    font-style: italic;
+}
+
+#loadingIndicator, #errorDisplay:not(:empty) { /* Show error display only if it has content */
+    text-align: center;
+    font-size: 1.1em;
+    margin-top: 20px;
+    padding: 15px;
+    border-radius: 8px;
+}
+#loadingIndicator {
+    color: #004d40;
+}
+
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+    body {
+        padding: 10px;
+        font-size: 15px; /* Adjust base font for smaller screens */
+    }
+    #appContainer {
+        padding: 15px;
+    }
+    h2 { font-size: 1.6em; }
+    h3 { font-size: 1.4em; }
+    button { padding: 10px 15px; font-size: 0.95em; }
+    input[type="text"] { padding: 10px; }
+
+    .tabs-container { font-size: 0.9em; margin-bottom: 15px;}
+    .child-tab { padding: 10px 12px; }
+
+    #currentChildTitle { font-size: 1.6em; }
+    #allowanceInfo { font-size: 1.1em; }
+
+    .chore-grid-header, .chore-item {
+        grid-template-columns: minmax(100px, 2.5fr) 1fr 1fr;
+        font-size: 0.9em;
+        padding: 12px 8px;
+    }
+    .chore-checkbox-cell input[type="checkbox"] {
+        transform: scale(1.4);
+    }
+}
