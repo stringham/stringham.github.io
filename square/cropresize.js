@@ -9,23 +9,32 @@ class Cropper {
         this.container.className = 'cropper-card';
         parent.appendChild(this.container);
 
-        // Header
+        // Header (Filename)
         const header = document.createElement('div');
         header.className = 'card-header';
         header.innerHTML = `<span class="filename" title="${this.fileName}">${this.fileName}</span>`;
         this.container.appendChild(header);
 
-        // Actions
-        const actions = document.createElement('div');
-        actions.className = 'card-actions';
-        this.container.appendChild(actions);
+        // Canvas (Middle)
+        this.canvas = document.createElement('canvas');
+        this.ctx = this.canvas.getContext('2d');
+        this.container.appendChild(this.canvas);
+
+        // Footer (Toolbar)
+        const footer = document.createElement('div');
+        footer.className = 'card-footer';
+        this.container.appendChild(footer);
 
         // Rotate Button
         this.rotationButton = document.createElement('button');
-        this.rotationButton.className = 'icon-btn';
-        this.rotationButton.title = "Rotate";
-        this.rotationButton.innerHTML = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M21 2V8M21 8H15M21 8L18.3597 5.63067C16.9787 4.25209 15.187 3.35964 13.2547 3.08779C11.3223 2.81593 9.35394 3.17941 7.64612 4.12343C5.93831 5.06746 4.58358 6.54091 3.78606 8.32177C2.98854 10.1026 2.79143 12.0944 3.22442 13.997C3.65742 15.8996 4.69707 17.61 6.18673 18.8704C7.67638 20.1308 9.53534 20.873 11.4835 20.9851C13.4317 21.0972 15.3635 20.5732 16.988 19.492C18.6124 18.4108 19.8414 16.831 20.4899 14.9907" stroke="#001A72" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-        actions.appendChild(this.rotationButton);
+        this.rotationButton.className = 'tool-btn';
+        this.rotationButton.title = "Rotate Image";
+        this.rotationButton.innerHTML = `
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M21 2V8M21 8H15M21 8L18.3597 5.63067C16.9787 4.25209 15.187 3.35964 13.2547 3.08779C11.3223 2.81593 9.35394 3.17941 7.64612 4.12343C5.93831 5.06746 4.58358 6.54091 3.78606 8.32177C2.98854 10.1026 2.79143 12.0944 3.22442 13.997C3.65742 15.8996 4.69707 17.61 6.18673 18.8704C7.67638 20.1308 9.53534 20.873 11.4835 20.9851C13.4317 21.0972 15.3635 20.5732 16.988 19.492C18.6124 18.4108 19.8414 16.831 20.4899 14.9907" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg> Rotate`;
+        footer.appendChild(this.rotationButton);
+
         this.rotationButton.addEventListener('click', (e) => {
             e.stopPropagation();
             this.modifyRotation();
@@ -33,19 +42,19 @@ class Cropper {
 
         // Delete Button
         this.deleteButton = document.createElement('button');
-        this.deleteButton.className = 'icon-btn';
-        this.deleteButton.title = "Remove";
-        this.deleteButton.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="#d32f2f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
-        actions.appendChild(this.deleteButton);
+        this.deleteButton.className = 'tool-btn delete';
+        this.deleteButton.title = "Remove Image";
+        this.deleteButton.innerHTML = `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+        </svg> Remove`;
+        footer.appendChild(this.deleteButton);
+
         this.deleteButton.addEventListener('click', (e) => {
             e.stopPropagation();
             this.destroy();
         });
-
-        // Canvas
-        this.canvas = document.createElement('canvas');
-        this.ctx = this.canvas.getContext('2d');
-        this.container.appendChild(this.canvas);
 
         // --- Logic Initialization ---
         this.url = URL.createObjectURL(file);
@@ -343,11 +352,9 @@ class Cropper {
         x = Math.min(this.width - this.imgSize, Math.max(0, x));
         y = Math.min(this.height - this.imgSize, Math.max(0, y));
 
-        // --- START BRIGHTNESS PREVIEW ---
         if (typeof manager !== 'undefined' && manager.useBrightness) {
             this.ctx.filter = 'brightness(1.15)';
         }
-        // --- END BRIGHTNESS PREVIEW ---
 
         this.rotate(this.ctx, this.size, this.size);
 
@@ -539,11 +546,20 @@ class Manager {
         this.setupGlobalClick();
     }
 
+    updateCount() {
+        const countEl = document.getElementById('photo-count');
+        const count = this.croppers.length;
+        if(countEl) {
+            countEl.innerText = `${count} Photo${count !== 1 ? 's' : ''}`;
+        }
+    }
+
     addFile(file) {
         const onDelete = (cropperInstance) => {
             const index = this.croppers.indexOf(cropperInstance);
             if (index > -1) this.croppers.splice(index, 1);
             if (this.selectedCropper === cropperInstance) this.selectedCropper = null;
+            this.updateCount();
         };
 
         const onSelect = (cropperInstance) => {
@@ -555,6 +571,7 @@ class Manager {
 
         const cropper = new Cropper(file, size.value, timestamp.checked, this.cropperContainer, onDelete, onSelect);
         this.croppers.push(cropper);
+        this.updateCount();
     }
 
     setupGlobalClick() {
