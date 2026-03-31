@@ -16,7 +16,7 @@
         button:disabled { background: #94a3b8; cursor: not-allowed; }
         #status { margin-top: 15px; font-weight: bold; color: #28a745; text-align: center; }
         .error { color: #dc3545; }
-        .log { font-size: 13px; color: #475569; margin-top: 15px; white-space: pre-wrap; background: #f8fafc; padding: 15px; border-radius: 4px; border: 1px solid #e2e8f0; }
+        .log { font-size: 13px; color: #475569; margin-top: 15px; white-space: pre-wrap; background: #f8fafc; padding: 15px; border-radius: 4px; border: 1px solid #e2e8f0; max-height: 300px; overflow-y: auto; }
         .instruction { background: #eff6ff; padding: 15px; border-left: 4px solid #3b82f6; margin-bottom: 20px; font-size: 14px; line-height: 1.5; }
     </style>
 </head>
@@ -27,12 +27,12 @@
     
     <div class="instruction">
         <strong>How to use:</strong><br>
-        1. <strong>Template File:</strong> A .3mf containing your perfect layout on Plate 1.<br>
-        2. <strong>Target File:</strong> A .3mf containing multiple plates. Every plate (including Plate 1) must have exactly <strong>one single item</strong>, and it must be Right-Clicked -> <strong>Centered</strong>.
+        1. <strong>Template File:</strong> A .3mf containing your perfect layout and layer settings (pauses/filament changes) on Plate 1.<br>
+        2. <strong>Target File:</strong> A .3mf containing your new items. Toss all items loosely onto a single plate. The tool will automatically sort them by name, assign each to its own numbered plate, and arrange the plates in a grid.
     </div>
 
     <div class="form-group">
-        <label for="templateInput">1. Upload Template .3mf (The Layout)</label>
+        <label for="templateInput">1. Upload Template .3mf (The Layout & Settings)</label>
         <input type="file" id="templateInput" accept=".3mf">
     </div>
 
@@ -73,16 +73,12 @@
 
     targetInput.addEventListener('change', (e) => {
         targetFile = e.target.files[0];
-        
-        // Auto-populate the filename input with a suggested name based on the target file
         if (targetFile) {
             outputFilenameInput.value = targetFile.name.replace('.3mf', '_formatted.3mf');
         }
-        
         checkReady();
     });
 
-    // Generate valid UUIDs for Bambu Studio
     function generateUUID() {
         return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
             var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
@@ -98,66 +94,116 @@
         processBtn.disabled = true;
 
         try {
+            const parser = new DOMParser();
             const zip = new JSZip();
 
             // --- STEP 1: READ TEMPLATE ---
             logDiv.textContent += "Reading Template File...\n";
             const templateZip = await zip.loadAsync(templateFile);
+            
             const templateModelFile = templateZip.file("3D/3dmodel.model");
             if (!templateModelFile) throw new Error("Could not find 3D/3dmodel.model in Template.");
-            
             const templateXml = await templateModelFile.async("string");
-            const parser = new DOMParser();
             const templateDoc = parser.parseFromString(templateXml, "text/xml");
             
             const templateItems = Array.from(templateDoc.querySelectorAll("build > item"));
             const layoutTransforms = [];
-
-            // Grab all items that are on Plate 1 (roughly coordinates 0 to 276)
             templateItems.forEach(item => {
                 const transformStr = item.getAttribute('transform');
                 const matrix = transformStr.split(' ').map(Number);
-                if (matrix[9] >= -20 && matrix[9] <= 276 && matrix[10] >= -20 && matrix[10] <= 276) {
+                if (matrix[9] >= -20 && matrix[9] <= 300 && matrix[10] >= -20 && matrix[10] <= 300) {
                     layoutTransforms.push(matrix);
                 }
             });
 
             if (layoutTransforms.length === 0) throw new Error("Could not find any layout items on Plate 1 of the Template.");
-            logDiv.textContent += `-> Extracted ${layoutTransforms.length} coordinate placements from Template.\n\n`;
+            logDiv.textContent += `-> Extracted ${layoutTransforms.length} coordinate placements from Template.\n`;
 
-            // --- STEP 2: READ & MODIFY TARGET ---
-            logDiv.textContent += "Reading Target File...\n";
-            const targetZip = await new JSZip().loadAsync(targetFile); // Fresh instance for target
+            const templateSettingsFile = templateZip.file("Metadata/project_settings.config");
+            let templateProjObj = null;
+            if (templateSettingsFile) templateProjObj = JSON.parse(await templateSettingsFile.async("string"));
+
+            const templateSliceInfoFile = templateZip.file("Metadata/slice_info.config");
+            let templateSliceDoc = null;
+            if (templateSliceInfoFile) templateSliceDoc = parser.parseFromString(await templateSliceInfoFile.async("string"), "text/xml");
+
+            const templateGcodeFile = templateZip.file("Metadata/custom_gcode_per_layer.xml");
+            let templateGcodeDoc = null;
+            if (templateGcodeFile) templateGcodeDoc = parser.parseFromString(await templateGcodeFile.async("string"), "text/xml");
+
+            // --- STEP 2: READ TARGET & BUILD OBJECT MAP ---
+            logDiv.textContent += "\nReading Target File...\n";
+            const targetZip = await new JSZip().loadAsync(targetFile); 
+            
+            // First, parse model_settings.config to get the true user-facing filenames
+            const targetModelSettingsFile = targetZip.file("Metadata/model_settings.config");
+            let targetModelSettingsDoc = null;
+            const objectMap = {};
+
+            if (targetModelSettingsFile) {
+                targetModelSettingsDoc = parser.parseFromString(await targetModelSettingsFile.async("string"), "text/xml");
+                const objects = targetModelSettingsDoc.querySelectorAll("config > object");
+                objects.forEach(obj => {
+                    const id = obj.getAttribute("id");
+                    const nameMeta = obj.querySelector('metadata[key="name"]');
+                    if (nameMeta) {
+                        objectMap[id] = nameMeta.getAttribute("value");
+                    }
+                });
+            }
+
+            // Now read the 3D model
             const targetModelFile = targetZip.file("3D/3dmodel.model");
             if (!targetModelFile) throw new Error("Could not find 3D/3dmodel.model in Target.");
-            
             const targetXml = await targetModelFile.async("string");
             const targetDoc = parser.parseFromString(targetXml, "text/xml");
+            
+            // Fallback: If any object wasn't in model_settings, try to grab its name from 3dmodel
+            Array.from(targetDoc.querySelectorAll("resources > object")).forEach(obj => {
+                const id = obj.getAttribute('id');
+                if (!objectMap[id]) {
+                    objectMap[id] = obj.getAttribute('name') || '';
+                }
+            });
+
             const buildNode = targetDoc.querySelector("build");
             const targetAnchors = Array.from(targetDoc.querySelectorAll("build > item"));
-
             if (targetAnchors.length === 0) throw new Error("Target file has no items to duplicate.");
-            logDiv.textContent += `-> Found ${targetAnchors.length} single anchor items in Target.\n`;
 
+            // Sort target items alphabetically (natural sorting) using the correct filenames
+            targetAnchors.sort((a, b) => {
+                const nameA = objectMap[a.getAttribute('objectid')] || '';
+                const nameB = objectMap[b.getAttribute('objectid')] || '';
+                return nameA.localeCompare(nameB, undefined, {numeric: true});
+            });
+
+            const N = targetAnchors.length;
+            const columns = Math.ceil(Math.sqrt(N));
+            logDiv.textContent += `-> Found ${N} items. Calculated a grid of ${columns} columns.\n`;
+
+            const SPACING_X = 307.2;
+            const SPACING_Y = -307.2; 
             let itemsGenerated = 0;
 
-            // Process each anchor in the Target file
+            // Clear old unaligned items from 3D model
+            targetAnchors.forEach(anchor => anchor.remove());
+
+            // Process each sorted anchor in 3dmodel.model
             targetAnchors.forEach((anchor, index) => {
-                const anchorMatrix = anchor.getAttribute('transform').split(' ').map(Number);
                 const objectId = anchor.getAttribute('objectid');
+                const name = objectMap[objectId];
+                
+                const col = index % columns;
+                const row = Math.floor(index / columns);
+                const baseX = col * SPACING_X;
+                const baseY = row * SPACING_Y;
 
-                // Calculate the plate offset. A centered item has coordinates (128, 128) relative to its plate.
-                // Subtracting 128 gives us the exact vector required to shift the Template layout to this plate.
-                const deltaX = anchorMatrix[9] - 128;
-                const deltaY = anchorMatrix[10] - 128;
+                logDiv.textContent += `   - Mapping '${name}' to Plate ${index + 1}\n`;
 
-                // Clone the Template layout for this specific Target object
                 layoutTransforms.forEach(templateMatrix => {
                     const newMatrix = [...templateMatrix];
-
-                    // Shift the X and Y based on the anchor's plate location
-                    newMatrix[9] += deltaX;
-                    newMatrix[10] += deltaY;
+                    newMatrix[9] += baseX; 
+                    newMatrix[10] += baseY; 
 
                     const newItem = targetDoc.createElement('item');
                     newItem.setAttribute('objectid', objectId);
@@ -168,55 +214,158 @@
                     buildNode.appendChild(newItem);
                     itemsGenerated++;
                 });
-
-                // Remove the original anchor so we don't have a rogue item in the center
-                anchor.parentNode.removeChild(anchor);
             });
 
-            logDiv.textContent += `\nSuccessfully generated ${itemsGenerated} new structured items!\n\n`;
+            // --- STEP 3: CLONE SETTINGS ACROSS PLATES ---
+            logDiv.textContent += "\nApplying Global Arrays (project_settings.config)...\n";
+            if (templateProjObj) {
+                const plateArrays = ["wipe_tower_x", "wipe_tower_y", "wipe_tower_rotation_angle", "curr_bed_type"];
+                plateArrays.forEach(key => {
+                    if (templateProjObj[key] !== undefined && Array.isArray(templateProjObj[key])) {
+                        const baseVal = templateProjObj[key][0];
+                        templateProjObj[key] = Array(N).fill(baseVal);
+                    }
+                });
+                targetZip.file("Metadata/project_settings.config", JSON.stringify(templateProjObj, null, 4));
+            }
 
-            // --- STEP 3: ALIGN PURGE TOWERS ---
-            logDiv.textContent += "Aligning purge towers across all plates...\n";
-            const metadataFile = targetZip.file("Metadata/project_settings.config");
-            
-            if (metadataFile) {
-                let fileText = await metadataFile.async("string");
-                try {
-                    let configObj = JSON.parse(fileText);
+            logDiv.textContent += "Applying Slice Information (slice_info.config)...\n";
+            if (templateSliceDoc) {
+                const configNode = templateSliceDoc.querySelector("config");
+                if (configNode) {
+                    const firstPlate = templateSliceDoc.querySelector("plate");
+                    Array.from(configNode.querySelectorAll("plate")).forEach(p => p.remove());
 
-                    if (configObj.wipe_tower_x && configObj.wipe_tower_x.length > 0) {
-                        const baseTowerX = configObj.wipe_tower_x[0];
-                        for (let i = 1; i < configObj.wipe_tower_x.length; i++) {
-                            configObj.wipe_tower_x[i] = baseTowerX;
+                    if (firstPlate) {
+                        for (let i = 0; i < N; i++) {
+                            const newPlate = firstPlate.cloneNode(true);
+                            const platerIdNode = newPlate.querySelector('metadata[key="plater_id"]');
+                            if (platerIdNode) platerIdNode.setAttribute("value", String(i + 1));
+                            const platerNameNode = newPlate.querySelector('metadata[key="plater_name"]');
+                            if (platerNameNode) platerNameNode.setAttribute("value", String(i + 1));
+                            
+                            Array.from(newPlate.querySelectorAll("object")).forEach(obj => obj.remove());
+                            const targetAnchor = targetAnchors[i];
+                            if (targetAnchor) {
+                                const newObjNode = templateSliceDoc.createElement('object');
+                                newObjNode.setAttribute('id', targetAnchor.getAttribute('objectid'));
+                                newPlate.appendChild(newObjNode);
+                            }
+                            configNode.appendChild(newPlate);
                         }
                     }
+                    targetZip.file("Metadata/slice_info.config", new XMLSerializer().serializeToString(templateSliceDoc));
+                }
+            }
 
-                    if (configObj.wipe_tower_y && configObj.wipe_tower_y.length > 0) {
-                        const baseTowerY = configObj.wipe_tower_y[0];
-                        for (let i = 1; i < configObj.wipe_tower_y.length; i++) {
-                            configObj.wipe_tower_y[i] = baseTowerY;
+            logDiv.textContent += "Applying Custom Layer G-Code (custom_gcode_per_layer.xml)...\n";
+            if (templateGcodeDoc) {
+                const rootNode = templateGcodeDoc.querySelector("custom_gcodes_per_layer");
+                if (rootNode) {
+                    const firstPlateGcode = templateGcodeDoc.querySelector("plate");
+                    Array.from(rootNode.querySelectorAll("plate")).forEach(p => p.remove());
+
+                    if (firstPlateGcode) {
+                        for (let i = 0; i < N; i++) {
+                            const newPlateGcode = firstPlateGcode.cloneNode(true);
+                            const plateInfo = newPlateGcode.querySelector("plate_info");
+                            if (plateInfo) {
+                                plateInfo.setAttribute("id", String(i + 1));
+                            }
+                            rootNode.appendChild(newPlateGcode);
                         }
                     }
-
-                    targetZip.file("Metadata/project_settings.config", JSON.stringify(configObj, null, 4));
-                    logDiv.textContent += "-> Purge towers aligned successfully.\n\n";
-                } catch (e) {
-                    console.error("Error parsing project_settings.config", e);
-                    logDiv.textContent += "-> Warning: Could not parse project_settings.config for purge towers.\n\n";
+                    targetZip.file("Metadata/custom_gcode_per_layer.xml", new XMLSerializer().serializeToString(templateGcodeDoc));
                 }
             } else {
-                logDiv.textContent += "-> No project_settings.config found (skipping purge towers).\n\n";
+                targetZip.remove("Metadata/custom_gcode_per_layer.xml");
+            }
+
+            logDiv.textContent += "Mapping Studio UI Plates (model_settings.config)...\n";
+            // We already parsed targetModelSettingsDoc in Step 2!
+            if (targetModelSettingsDoc) {
+                const configNode = targetModelSettingsDoc.querySelector("config");
+                const plateNodes = Array.from(targetModelSettingsDoc.querySelectorAll("plate"));
+                
+                if (plateNodes.length > 0 && configNode) {
+                    let plateTemplate = plateNodes[0];
+                    plateNodes.forEach(p => p.remove()); 
+                    
+                    for (let i = 0; i < N; i++) {
+                        const newPlate = plateTemplate.cloneNode(true);
+                        const platerIdNode = newPlate.querySelector('metadata[key="plater_id"]');
+                        if (platerIdNode) platerIdNode.setAttribute("value", String(i + 1));
+                        const platerNameNode = newPlate.querySelector('metadata[key="plater_name"]');
+                        if (platerNameNode) platerNameNode.setAttribute("value", String(i + 1));
+                        
+                        Array.from(newPlate.querySelectorAll("model_instance")).forEach(mi => mi.remove());
+                        
+                        const targetAnchor = targetAnchors[i];
+                        if (targetAnchor) {
+                            const miNode = targetModelSettingsDoc.createElement("model_instance");
+                            
+                            const metaObj = targetModelSettingsDoc.createElement("metadata");
+                            metaObj.setAttribute("key", "object_id");
+                            metaObj.setAttribute("value", targetAnchor.getAttribute('objectid'));
+                            
+                            const metaInst = targetModelSettingsDoc.createElement("metadata");
+                            metaInst.setAttribute("key", "instance_id");
+                            metaInst.setAttribute("value", "0");
+                            
+                            const metaIdent = targetModelSettingsDoc.createElement("metadata");
+                            metaIdent.setAttribute("key", "identify_id");
+                            metaIdent.setAttribute("value", String(Math.floor(Math.random() * 100000)));
+
+                            miNode.appendChild(metaObj);
+                            miNode.appendChild(metaInst);
+                            miNode.appendChild(metaIdent);
+                            newPlate.appendChild(miNode);
+                        }
+                        
+                        const assembleNode = configNode.querySelector("assemble");
+                        if (assembleNode) {
+                            configNode.insertBefore(newPlate, assembleNode);
+                        } else {
+                            configNode.appendChild(newPlate);
+                        }
+                    }
+
+                    // Shift the geometric positions of the parts
+                    const assembleItems = Array.from(targetModelSettingsDoc.querySelectorAll("assemble_item"));
+                    assembleItems.forEach(item => {
+                        const objId = item.getAttribute("object_id");
+                        const plateIndex = targetAnchors.findIndex(a => a.getAttribute('objectid') === objId);
+                        
+                        if (plateIndex !== -1) {
+                            const col = plateIndex % columns;
+                            const row = Math.floor(plateIndex / columns);
+                            const baseX = col * SPACING_X;
+                            const baseY = row * SPACING_Y;
+                            
+                            const transformAttr = item.getAttribute("transform");
+                            if (transformAttr) {
+                                const parts = transformAttr.split(" ").map(Number);
+                                if (parts.length === 12) {
+                                    parts[9] += baseX; 
+                                    parts[10] += baseY; 
+                                    item.setAttribute("transform", parts.join(" "));
+                                }
+                            }
+                        }
+                    });
+
+                    targetZip.file("Metadata/model_settings.config", new XMLSerializer().serializeToString(targetModelSettingsDoc));
+                }
             }
 
             // --- STEP 4: SAVE AND DOWNLOAD ---
-            logDiv.textContent += "Packaging file...\n";
+            logDiv.textContent += "\nPackaging file...\n";
             const serializer = new XMLSerializer();
             targetZip.file("3D/3dmodel.model", serializer.serializeToString(targetDoc));
 
             const blob = await targetZip.generateAsync({ type: "blob", compression: "DEFLATE" });
             const url = URL.createObjectURL(blob);
             
-            // Get user-defined filename, fallback to default, and ensure it ends with .3mf
             let finalFilename = outputFilenameInput.value.trim() || 'formatted_output.3mf';
             if (!finalFilename.toLowerCase().endsWith('.3mf')) {
                 finalFilename += '.3mf';
@@ -244,4 +393,3 @@
 </script>
 </body>
 </html>
-
