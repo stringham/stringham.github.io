@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3MF Master Template Aligner</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; max-width: 650px; margin: 40px auto; padding: 20px; background: #f9f9f9; color: #333; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; color: #2c3e50; }
+        input[type="file"], input[type="text"] { width: 100%; padding: 10px; margin-top: 4px; box-sizing: border-box; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 4px; font-family: inherit; }
+        button { background: #007bff; color: white; border: none; padding: 12px 15px; border-radius: 4px; cursor: pointer; font-size: 16px; width: 100%; font-weight: bold; }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #94a3b8; cursor: not-allowed; }
+        #status { margin-top: 15px; font-weight: bold; color: #28a745; text-align: center; }
+        .error { color: #dc3545; }
+        .log { font-size: 13px; color: #475569; margin-top: 15px; white-space: pre-wrap; background: #f8fafc; padding: 15px; border-radius: 4px; border: 1px solid #e2e8f0; }
+        .instruction { background: #eff6ff; padding: 15px; border-left: 4px solid #3b82f6; margin-bottom: 20px; font-size: 14px; line-height: 1.5; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>3MF Master Template Aligner</h2>
+    
+    <div class="instruction">
+        <strong>How to use:</strong><br>
+        1. <strong>Template File:</strong> A .3mf containing your perfect layout on Plate 1.<br>
+        2. <strong>Target File:</strong> A .3mf containing multiple plates. Every plate (including Plate 1) must have exactly <strong>one single item</strong>, and it must be Right-Clicked -> <strong>Centered</strong>.
+    </div>
+
+    <div class="form-group">
+        <label for="templateInput">1. Upload Template .3mf (The Layout)</label>
+        <input type="file" id="templateInput" accept=".3mf">
+    </div>
+
+    <div class="form-group">
+        <label for="targetInput">2. Upload Target .3mf (The New Objects)</label>
+        <input type="file" id="targetInput" accept=".3mf">
+    </div>
+
+    <div class="form-group">
+        <label for="outputFilename">3. Output Filename</label>
+        <input type="text" id="outputFilename" placeholder="formatted_output.3mf">
+    </div>
+
+    <button id="processBtn" disabled>Apply Template & Download</button>
+    <div id="status"></div>
+    <div id="log" class="log" style="display:none;"></div>
+</div>
+
+<script>
+    const templateInput = document.getElementById('templateInput');
+    const targetInput = document.getElementById('targetInput');
+    const outputFilenameInput = document.getElementById('outputFilename');
+    const processBtn = document.getElementById('processBtn');
+    const statusDiv = document.getElementById('status');
+    const logDiv = document.getElementById('log');
+
+    let templateFile = null;
+    let targetFile = null;
+
+    function checkReady() {
+        processBtn.disabled = !(templateFile && targetFile);
+    }
+
+    templateInput.addEventListener('change', (e) => {
+        templateFile = e.target.files[0];
+        checkReady();
+    });
+
+    targetInput.addEventListener('change', (e) => {
+        targetFile = e.target.files[0];
+        
+        // Auto-populate the filename input with a suggested name based on the target file
+        if (targetFile) {
+            outputFilenameInput.value = targetFile.name.replace('.3mf', '_formatted.3mf');
+        }
+        
+        checkReady();
+    });
+
+    // Generate valid UUIDs for Bambu Studio
+    function generateUUID() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    }
+
+    processBtn.addEventListener('click', async () => {
+        statusDiv.textContent = 'Processing files...';
+        statusDiv.className = '';
+        logDiv.textContent = '';
+        logDiv.style.display = 'block';
+        processBtn.disabled = true;
+
+        try {
+            const zip = new JSZip();
+
+            // --- STEP 1: READ TEMPLATE ---
+            logDiv.textContent += "Reading Template File...\n";
+            const templateZip = await zip.loadAsync(templateFile);
+            const templateModelFile = templateZip.file("3D/3dmodel.model");
+            if (!templateModelFile) throw new Error("Could not find 3D/3dmodel.model in Template.");
+            
+            const templateXml = await templateModelFile.async("string");
+            const parser = new DOMParser();
+            const templateDoc = parser.parseFromString(templateXml, "text/xml");
+            
+            const templateItems = Array.from(templateDoc.querySelectorAll("build > item"));
+            const layoutTransforms = [];
+
+            // Grab all items that are on Plate 1 (roughly coordinates 0 to 276)
+            templateItems.forEach(item => {
+                const transformStr = item.getAttribute('transform');
+                const matrix = transformStr.split(' ').map(Number);
+                if (matrix[9] >= -20 && matrix[9] <= 276 && matrix[10] >= -20 && matrix[10] <= 276) {
+                    layoutTransforms.push(matrix);
+                }
+            });
+
+            if (layoutTransforms.length === 0) throw new Error("Could not find any layout items on Plate 1 of the Template.");
+            logDiv.textContent += `-> Extracted ${layoutTransforms.length} coordinate placements from Template.\n\n`;
+
+            // --- STEP 2: READ & MODIFY TARGET ---
+            logDiv.textContent += "Reading Target File...\n";
+            const targetZip = await new JSZip().loadAsync(targetFile); // Fresh instance for target
+            const targetModelFile = targetZip.file("3D/3dmodel.model");
+            if (!targetModelFile) throw new Error("Could not find 3D/3dmodel.model in Target.");
+            
+            const targetXml = await targetModelFile.async("string");
+            const targetDoc = parser.parseFromString(targetXml, "text/xml");
+            const buildNode = targetDoc.querySelector("build");
+            const targetAnchors = Array.from(targetDoc.querySelectorAll("build > item"));
+
+            if (targetAnchors.length === 0) throw new Error("Target file has no items to duplicate.");
+            logDiv.textContent += `-> Found ${targetAnchors.length} single anchor items in Target.\n`;
+
+            let itemsGenerated = 0;
+
+            // Process each anchor in the Target file
+            targetAnchors.forEach((anchor, index) => {
+                const anchorMatrix = anchor.getAttribute('transform').split(' ').map(Number);
+                const objectId = anchor.getAttribute('objectid');
+
+                // Calculate the plate offset. A centered item has coordinates (128, 128) relative to its plate.
+                // Subtracting 128 gives us the exact vector required to shift the Template layout to this plate.
+                const deltaX = anchorMatrix[9] - 128;
+                const deltaY = anchorMatrix[10] - 128;
+
+                // Clone the Template layout for this specific Target object
+                layoutTransforms.forEach(templateMatrix => {
+                    const newMatrix = [...templateMatrix];
+
+                    // Shift the X and Y based on the anchor's plate location
+                    newMatrix[9] += deltaX;
+                    newMatrix[10] += deltaY;
+
+                    const newItem = targetDoc.createElement('item');
+                    newItem.setAttribute('objectid', objectId);
+                    newItem.setAttribute('p:UUID', generateUUID());
+                    newItem.setAttribute('transform', newMatrix.join(' '));
+                    newItem.setAttribute('printable', '1');
+
+                    buildNode.appendChild(newItem);
+                    itemsGenerated++;
+                });
+
+                // Remove the original anchor so we don't have a rogue item in the center
+                anchor.parentNode.removeChild(anchor);
+            });
+
+            logDiv.textContent += `\nSuccessfully generated ${itemsGenerated} new structured items!\n\n`;
+
+            // --- STEP 3: ALIGN PURGE TOWERS ---
+            logDiv.textContent += "Aligning purge towers across all plates...\n";
+            const metadataFile = targetZip.file("Metadata/project_settings.config");
+            
+            if (metadataFile) {
+                let fileText = await metadataFile.async("string");
+                try {
+                    let configObj = JSON.parse(fileText);
+
+                    if (configObj.wipe_tower_x && configObj.wipe_tower_x.length > 0) {
+                        const baseTowerX = configObj.wipe_tower_x[0];
+                        for (let i = 1; i < configObj.wipe_tower_x.length; i++) {
+                            configObj.wipe_tower_x[i] = baseTowerX;
+                        }
+                    }
+
+                    if (configObj.wipe_tower_y && configObj.wipe_tower_y.length > 0) {
+                        const baseTowerY = configObj.wipe_tower_y[0];
+                        for (let i = 1; i < configObj.wipe_tower_y.length; i++) {
+                            configObj.wipe_tower_y[i] = baseTowerY;
+                        }
+                    }
+
+                    targetZip.file("Metadata/project_settings.config", JSON.stringify(configObj, null, 4));
+                    logDiv.textContent += "-> Purge towers aligned successfully.\n\n";
+                } catch (e) {
+                    console.error("Error parsing project_settings.config", e);
+                    logDiv.textContent += "-> Warning: Could not parse project_settings.config for purge towers.\n\n";
+                }
+            } else {
+                logDiv.textContent += "-> No project_settings.config found (skipping purge towers).\n\n";
+            }
+
+            // --- STEP 4: SAVE AND DOWNLOAD ---
+            logDiv.textContent += "Packaging file...\n";
+            const serializer = new XMLSerializer();
+            targetZip.file("3D/3dmodel.model", serializer.serializeToString(targetDoc));
+
+            const blob = await targetZip.generateAsync({ type: "blob", compression: "DEFLATE" });
+            const url = URL.createObjectURL(blob);
+            
+            // Get user-defined filename, fallback to default, and ensure it ends with .3mf
+            let finalFilename = outputFilenameInput.value.trim() || 'formatted_output.3mf';
+            if (!finalFilename.toLowerCase().endsWith('.3mf')) {
+                finalFilename += '.3mf';
+            }
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = finalFilename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            statusDiv.textContent = 'Success! File downloaded.';
+            statusDiv.className = '';
+
+        } catch (error) {
+            console.error(error);
+            statusDiv.textContent = 'Error: ' + error.message;
+            statusDiv.className = 'error';
+        } finally {
+            processBtn.disabled = false;
+        }
+    });
+</script>
+</body>
+</html>
+
