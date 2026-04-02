@@ -42,8 +42,13 @@
     </div>
 
     <div class="form-group">
-        <label for="outputFilename">3. Output Filename</label>
-        <input type="text" id="outputFilename" placeholder="formatted_output.3mf">
+        <label for="projectTitle">3. New Project Title (Optional)</label>
+        <input type="text" id="projectTitle" placeholder="My Bulk Print Project">
+    </div>
+
+    <div class="form-group">
+        <label for="outputFilename">4. Output Filename</label>
+        <input type="text" id="outputFilename" placeholder="bulk_output.3mf">
     </div>
 
     <button id="processBtn" disabled>Apply Template & Download</button>
@@ -54,6 +59,7 @@
 <script>
     const templateInput = document.getElementById('templateInput');
     const targetInput = document.getElementById('targetInput');
+    const projectTitleInput = document.getElementById('projectTitle');
     const outputFilenameInput = document.getElementById('outputFilename');
     const processBtn = document.getElementById('processBtn');
     const statusDiv = document.getElementById('status');
@@ -74,7 +80,7 @@
     targetInput.addEventListener('change', (e) => {
         targetFile = e.target.files[0];
         if (targetFile) {
-            outputFilenameInput.value = targetFile.name.replace('.3mf', '_formatted.3mf');
+            outputFilenameInput.value = targetFile.name.replace('.3mf', '_bulk.3mf');
         }
         checkReady();
     });
@@ -157,6 +163,37 @@
             if (!targetModelFile) throw new Error("Could not find 3D/3dmodel.model in Target.");
             const targetXml = await targetModelFile.async("string");
             const targetDoc = parser.parseFromString(targetXml, "text/xml");
+
+            // --- NEW: METADATA CLEANUP & TITLE UPDATE ---
+            logDiv.textContent += "Cleaning metadata and updating Title...\n";
+            const userTitle = projectTitleInput.value.trim();
+            const metadataNodes = Array.from(targetDoc.querySelectorAll("metadata"));
+            let titleUpdated = false;
+
+            metadataNodes.forEach(node => {
+                const nameAttr = node.getAttribute("name");
+                if (!nameAttr) return;
+
+                if (nameAttr === "Description" || nameAttr.startsWith("Profile") || nameAttr.startsWith("Design")) {
+                    node.remove();
+                } else if (nameAttr === "Title" && userTitle) {
+                    node.textContent = userTitle;
+                    titleUpdated = true;
+                }
+            });
+
+            // If user provided a title but no <metadata name="Title"> tag existed, create it
+            if (userTitle && !titleUpdated) {
+                const modelRoot = targetDoc.querySelector("model");
+                if (modelRoot) {
+                    const newTitleNode = targetDoc.createElement("metadata");
+                    newTitleNode.setAttribute("name", "Title");
+                    newTitleNode.textContent = userTitle;
+                    // Insert at the top of the <model> block
+                    modelRoot.insertBefore(newTitleNode, modelRoot.firstChild);
+                }
+            }
+            // ---------------------------------------------
             
             // Fallback: If any object wasn't in model_settings, try to grab its name from 3dmodel
             Array.from(targetDoc.querySelectorAll("resources > object")).forEach(obj => {
@@ -282,7 +319,6 @@
             }
 
             logDiv.textContent += "Mapping Studio UI Plates (model_settings.config)...\n";
-            // We already parsed targetModelSettingsDoc in Step 2!
             if (targetModelSettingsDoc) {
                 const configNode = targetModelSettingsDoc.querySelector("config");
                 const plateNodes = Array.from(targetModelSettingsDoc.querySelectorAll("plate"));
@@ -330,7 +366,6 @@
                         }
                     }
 
-                    // Shift the geometric positions of the parts
                     const assembleItems = Array.from(targetModelSettingsDoc.querySelectorAll("assemble_item"));
                     assembleItems.forEach(item => {
                         const objId = item.getAttribute("object_id");
@@ -366,7 +401,7 @@
             const blob = await targetZip.generateAsync({ type: "blob", compression: "DEFLATE" });
             const url = URL.createObjectURL(blob);
             
-            let finalFilename = outputFilenameInput.value.trim() || 'formatted_output.3mf';
+            let finalFilename = outputFilenameInput.value.trim() || 'bulk_output.3mf';
             if (!finalFilename.toLowerCase().endsWith('.3mf')) {
                 finalFilename += '.3mf';
             }
