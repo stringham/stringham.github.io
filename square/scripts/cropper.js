@@ -1,43 +1,29 @@
 "use strict";
 
-class Cropper {
-    /**
-     * @param {File} file - The image file
-     * @param {Object} settings - { border, timestamp, useBrightness }
-     * @param {HTMLElement} parent - The DOM element to append to
-     * @param {Function} onDelete - Callback when deleted
-     * @param {Function} onSelect - Callback when selected
-     */
+window.Cropper = class Cropper {
     constructor(file, settings, parent, onDelete, onSelect) {
         this.onDelete = onDelete;
         this.onSelect = onSelect;
         this.fileName = file.name;
-
-        // Settings injection (no global access)
         this.settings = { ...settings };
 
-        // --- UI Setup ---
         this.container = document.createElement('div');
         this.container.className = 'cropper-card';
         parent.appendChild(this.container);
 
-        // Header (Filename)
         const header = document.createElement('div');
         header.className = 'card-header';
         header.innerHTML = `<span class="filename" title="${this.fileName}">${this.fileName}</span>`;
         this.container.appendChild(header);
 
-        // Canvas (Middle)
         this.canvas = document.createElement('canvas');
         this.ctx = this.canvas.getContext('2d');
         this.container.appendChild(this.canvas);
 
-        // Footer (Toolbar)
         const footer = document.createElement('div');
         footer.className = 'card-footer';
         this.container.appendChild(footer);
 
-        // Rotate Button
         this.rotationButton = document.createElement('button');
         this.rotationButton.className = 'tool-btn';
         this.rotationButton.title = "Rotate Image";
@@ -52,7 +38,6 @@ class Cropper {
             this.modifyRotation();
         });
 
-        // Delete Button
         this.deleteButton = document.createElement('button');
         this.deleteButton.className = 'tool-btn delete';
         this.deleteButton.title = "Remove Image";
@@ -68,11 +53,8 @@ class Cropper {
             this.destroy();
         });
 
-        // --- Logic Initialization ---
         this.url = URL.createObjectURL(file);
         this.size = 300;
-
-        // High DPI Handling
         this.dpr = window.devicePixelRatio || 1;
         this.name = file.name.split('.')[0];
 
@@ -88,8 +70,8 @@ class Cropper {
         this.imgSize = 0;
         this.maxImgSize = 0;
 
-        // Use local settings instead of parsing global inputs
         this.time = '';
+        this.originalTime = '';
         this.exifOrientation = 1;
         this.shouldRotate = getComputedStyle(document.body)['imageOrientation'] !== 'from-image';
 
@@ -102,8 +84,8 @@ class Cropper {
             this.imgSize = Math.min(this.width, this.height);
             this.maxImgSize = this.imgSize;
             try {
-                this.time = await Utils.getTime(this.img, this.name);
-                this.exifOrientation = await Utils.getExifOrientation(this.img);
+                this.time = await window.Utils.getTime(this.img, this.name);
+                this.originalTime = this.time;
             } finally {
                 this.load();
                 this.render();
@@ -114,7 +96,6 @@ class Cropper {
         this.attachListeners();
     }
 
-    // Public method to update settings dynamically
     updateSettings(newSettings) {
         this.settings = { ...this.settings, ...newSettings };
         this.render();
@@ -165,6 +146,9 @@ class Cropper {
 
     destroy() {
         this.container.remove();
+        if (this.url) {
+            URL.revokeObjectURL(this.url);
+        }
         if (this.onDelete) this.onDelete(this);
     }
 
@@ -233,8 +217,6 @@ class Cropper {
     getBlob(useFourBySix) {
         const maxSize = 1200;
         const canvas = document.createElement('canvas');
-
-        // Use local settings
         const borderVal = parseInt(this.settings.border) || 20;
 
         const border = borderVal * this.imgSize / this.size;
@@ -248,30 +230,24 @@ class Cropper {
 
         const ctx = canvas.getContext('2d');
         ctx.save();
-
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
 
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Draw Cut Line (Guide) if 4x6
         if(useFourBySix) {
             ctx.save();
             ctx.beginPath();
-
-            // Dynamic Line Sizing
             const relativeOffset = finalSize * 0.002;
             const relativeLineWidth = Math.max(1, finalSize * 0.001);
             const dashSize = finalSize * 0.015;
             const gapSize = finalSize * 0.01;
-
             const cutX = finalSize + relativeOffset;
 
             ctx.strokeStyle = "#999999";
             ctx.lineWidth = relativeLineWidth;
             ctx.setLineDash([dashSize, gapSize]);
-
             ctx.moveTo(cutX, 0);
             ctx.lineTo(cutX, canvas.height);
             ctx.stroke();
@@ -280,7 +256,6 @@ class Cropper {
 
         let x = Math.round(this.position.x + this.offset.x);
         let y = Math.round(this.position.y + this.offset.y);
-
         x = Math.min(this.width - this.imgSize, Math.max(0, x));
         y = Math.min(this.height - this.imgSize, Math.max(0, y));
 
@@ -330,7 +305,6 @@ class Cropper {
 
     mousewheel(e) {
         e.preventDefault();
-
         const oldImgSize = this.imgSize;
         const zoomFactor = 0.1;
 
@@ -354,13 +328,10 @@ class Cropper {
 
     render() {
         if (!this.width) return;
-
-        // Local copy of border
         const border = parseInt(this.settings.border) || 20;
 
         this.ctx.save();
         this.ctx.clearRect(0, 0, this.size, this.size);
-
         this.ctx.fillStyle = '#ffffff';
         this.ctx.fillRect(0, 0, this.size, this.size);
 
@@ -369,7 +340,6 @@ class Cropper {
 
         let x = Math.round(this.position.x + this.offset.x);
         let y = Math.round(this.position.y + this.offset.y);
-
         x = Math.min(this.width - this.imgSize, Math.max(0, x));
         y = Math.min(this.height - this.imgSize, Math.max(0, y));
 
@@ -378,10 +348,8 @@ class Cropper {
         }
 
         this.rotate(this.ctx, this.size, this.size);
-
         this.ctx.drawImage(this.img, x, y, this.imgSize, this.imgSize, border, border, this.size - border * 2, this.size - border * 2);
-
-        this.ctx.filter = 'none'; // Reset filter
+        this.ctx.filter = 'none';
         this.ctx.restore();
 
         if (this.isSelected || this.isHovered || this.dragging) {
@@ -415,7 +383,6 @@ class Cropper {
 
         ctx.shadowColor = "rgba(0,0,0,0.5)";
         ctx.shadowBlur = 2;
-
         ctx.stroke();
         ctx.restore();
     }
@@ -554,240 +521,3 @@ class Cropper {
         input.focus();
     }
 }
-
-
-class Manager {
-    constructor() {
-        this.cropperContainer = document.getElementById('cropper-grid');
-        this.croppers = [];
-        this.selectedCropper = null;
-
-        // --- State Initialization ---
-        // We bind to DOM elements here, making Manager the source of truth
-        this.ui = {
-            border: document.getElementById('bordersize'),
-            timestamp: document.getElementById('timestamp'),
-            fourBySix: document.getElementById('four-by-six'),
-            brighten: document.getElementById('brighten'),
-            select: document.getElementById('select'),
-            count: document.getElementById('photo-count'),
-            saveBtn: document.getElementById('save')
-        };
-
-        this.settings = {
-            border: parseInt(this.ui.border.value) || 20,
-            timestamp: this.ui.timestamp.checked,
-            useBrightness: this.ui.brighten.checked,
-            useFourBySix: this.ui.fourBySix.checked
-        };
-
-        this.setupDragDrop();
-        this.setupKeyboard();
-        this.setupGlobalClick();
-        this.setupListeners();
-    }
-
-    setupListeners() {
-        // settings changes
-        this.ui.border.addEventListener('change', () => this.updateSetting('border', parseInt(this.ui.border.value) || 0));
-        this.ui.timestamp.addEventListener('change', () => this.updateSetting('timestamp', this.ui.timestamp.checked));
-        this.ui.brighten.addEventListener('change', () => this.updateSetting('useBrightness', this.ui.brighten.checked));
-        this.ui.fourBySix.addEventListener('change', () => this.updateSetting('useFourBySix', this.ui.fourBySix.checked));
-
-        // File input
-        this.ui.select.addEventListener('change', (e) => {
-            for(let i=0; i < this.ui.select.files.length; i++) {
-                this.addFile(this.ui.select.files[i]);
-            }
-            this.ui.select.value = '';
-        });
-    }
-
-    updateSetting(key, value) {
-        this.settings[key] = value;
-        // Propagate to all croppers
-        this.croppers.forEach(c => c.updateSettings({ [key]: value }));
-    }
-
-    updateCount() {
-        const count = this.croppers.length;
-        if(this.ui.count) {
-            this.ui.count.innerText = `${count} Photo${count !== 1 ? 's' : ''}`;
-        }
-    }
-
-    addFile(file) {
-        const onDelete = (cropperInstance) => {
-            const index = this.croppers.indexOf(cropperInstance);
-            if (index > -1) this.croppers.splice(index, 1);
-            if (this.selectedCropper === cropperInstance) this.selectedCropper = null;
-            this.updateCount();
-        };
-
-        const onSelect = (cropperInstance) => {
-            if (this.selectedCropper && this.selectedCropper !== cropperInstance) {
-                this.selectedCropper.deselect();
-            }
-            this.selectedCropper = cropperInstance;
-        };
-
-        // Pass the settings snapshot to the new cropper
-        const cropper = new Cropper(file, this.settings, this.cropperContainer, onDelete, onSelect);
-        this.croppers.push(cropper);
-        this.updateCount();
-    }
-
-    setupGlobalClick() {
-        document.addEventListener('click', (e) => {
-            if (this.selectedCropper && !e.target.closest('.cropper-card')) {
-                this.selectedCropper.deselect();
-                this.selectedCropper = null;
-            }
-        });
-    }
-
-    setupDragDrop() {
-        const body = document.body;
-
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            body.addEventListener(eventName, preventDefaults, false);
-        });
-
-        function preventDefaults(e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-
-        body.addEventListener('dragenter', () => body.classList.add('drag-active'));
-        body.addEventListener('dragleave', (e) => {
-            if (e.clientX === 0 && e.clientY === 0) {
-                 body.classList.remove('drag-active');
-            }
-        });
-
-        body.addEventListener('drop', (e) => {
-            body.classList.remove('drag-active');
-            const files = e.dataTransfer.files;
-            for(let i = 0; i < files.length; i++) {
-                if(files[i].type.startsWith('image/')) {
-                    this.addFile(files[i]);
-                }
-            }
-        });
-    }
-
-    setupKeyboard() {
-        document.addEventListener('keydown', (e) => {
-            if (!this.selectedCropper) return;
-            if (e.target.tagName === 'INPUT') return;
-
-            const shift = e.shiftKey ? 10 : 1;
-
-            switch(e.key) {
-                case 'ArrowLeft':
-                    e.preventDefault();
-                    this.selectedCropper.nudge(-shift, 0);
-                    break;
-                case 'ArrowRight':
-                    e.preventDefault();
-                    this.selectedCropper.nudge(shift, 0);
-                    break;
-                case 'ArrowUp':
-                    e.preventDefault();
-                    this.selectedCropper.nudge(0, -shift);
-                    break;
-                case 'ArrowDown':
-                    e.preventDefault();
-                    this.selectedCropper.nudge(0, shift);
-                    break;
-                case 'Delete':
-                case 'Backspace':
-                    this.selectedCropper.destroy();
-                    break;
-            }
-        });
-    }
-
-    async save() {
-        if (this.croppers.length === 0) {
-            alert("No images to save!");
-            return;
-        }
-
-        const originalText = this.ui.saveBtn.innerText;
-        this.ui.saveBtn.innerText = "Zipping...";
-        this.ui.saveBtn.disabled = true;
-
-        try {
-            const blobs = await Promise.all(this.croppers.map(cropper => cropper.getBlob(this.settings.useFourBySix)));
-            const zip = new JSZip();
-
-            blobs.forEach(({ name, blob }) => {
-                zip.file(`${name}.jpg`, blob);
-            });
-
-            const zipBlob = await zip.generateAsync({ type: "blob" });
-            saveAs(zipBlob, "photos.zip");
-        } catch (e) {
-            console.error(e);
-            alert("Error saving zip");
-        } finally {
-            this.ui.saveBtn.innerText = originalText;
-            this.ui.saveBtn.disabled = false;
-        }
-    }
-}
-
-// Helpers Namespace
-const Utils = {
-    getExifOrientation: async (img) => {
-        return new Promise(resolve => {
-            EXIF.getData(img, function () {
-                resolve(EXIF.getTag(this, 'Orientation') || 1);
-            });
-        });
-    },
-
-    getTime: async (img, name) => {
-        const getFromName = (name) => {
-            const match = name.match(/[^\d](20[0-2]\d)([0-1]\d)([0-3]\d)/);
-            if (match) {
-                const [, year, month, day] = match;
-                return `${parseInt(month, 10)}/${parseInt(day, 10)}/${year}`;
-            }
-            return '';
-        };
-
-        // 1. Try EXIF data first to get the correct local snapshot time
-        const exifTime = await new Promise(resolve => {
-            EXIF.getData(img, function () {
-                try {
-                    const created = EXIF.getTag(this, 'DateTimeOriginal');
-                    if (!created) {
-                        resolve('');
-                    } else {
-                        // explicitly split the date part cleanly without constructing arbitrary timestamps that roll timezone shifts
-                        const datePart = created.split(' ')[0];
-                        const [year, month, day] = datePart.split(':');
-                        resolve(`${parseInt(month, 10)}/${parseInt(day, 10)}/${year}`);
-                    }
-                } catch (e) {
-                    resolve('');
-                }
-            });
-        });
-
-        if (exifTime) {
-            return exifTime;
-        }
-
-        // 2. Fall back to filename parsing only if EXIF metadata is completely missing
-        return getFromName(name);
-    }
-};
-
-// Initialize App
-document.addEventListener("DOMContentLoaded", function(event) {
-    // No globals exported to window
-    new Manager();
-});

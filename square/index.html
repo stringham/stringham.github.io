@@ -11,7 +11,10 @@
     <script src="./canvas-toBlob.js"></script>
     <script src="./jszip.js"></script>
     <script src="./exif-js.js"></script>
-    <script src="./cropresize.js"></script>
+    
+    <script src="./scripts/utils.js"></script>
+    <script src="./scripts/cropper.js"></script>
+    <script src="./scripts/manager.js"></script>
 </head>
 <body>
 
@@ -42,13 +45,14 @@
         </label>
         <label>
             <input id="four-by-six" type="checkbox" checked>
-            4x6 Ratio
+            Format for 4x6 Print
         </label>
     </div>
 </header>
 
-<div id="cropper-grid">
-</div>
+<main>
+    <div id="cropper-grid" class="cropper-grid"></div>
+</main>
 
 </body>
 </html>
