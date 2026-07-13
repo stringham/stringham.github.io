@@ -72,6 +72,7 @@ window.Cropper = class Cropper {
 
         this.time = '';
         this.originalTime = '';
+        this.userOverrideTime = ''; // Backing variable to explicitly track custom modifications
         this.exifOrientation = 1;
         this.shouldRotate = getComputedStyle(document.body)['imageOrientation'] !== 'from-image';
 
@@ -84,10 +85,16 @@ window.Cropper = class Cropper {
             this.imgSize = Math.min(this.width, this.height);
             this.maxImgSize = this.imgSize;
             try {
-                this.time = await window.Utils.getTime(this.img, this.name);
-                this.originalTime = this.time;
+                this.originalTime = await window.Utils.getTime(this.img, this.name);
+                
+                // First see if a previous userOverrideTime exists in localStorage data
+                this.load(); 
+                
+                // If no override was loaded from memory, fall back to the live auto-parsed time
+                if (!this.userOverrideTime) {
+                    this.time = this.originalTime;
+                }
             } finally {
-                this.load();
                 this.render();
             }
         };
@@ -157,11 +164,17 @@ window.Cropper = class Cropper {
     }
 
     save() {
-        localStorage.setItem(this.getId(), JSON.stringify({
+        const dataToSave = {
             position: this.position,
-            imgSize: this.imgSize,
-            time: this.time
-        }));
+            imgSize: this.imgSize
+        };
+
+        // Only commit custom user input changes to storage
+        if (this.userOverrideTime) {
+            dataToSave.userOverrideTime = this.userOverrideTime;
+        }
+
+        localStorage.setItem(this.getId(), JSON.stringify(dataToSave));
     }
 
     load() {
@@ -169,8 +182,10 @@ window.Cropper = class Cropper {
         if (data) {
             this.position = data.position;
             this.imgSize = data.imgSize;
-            this.time = data.time;
-            this.render();
+            if (data.userOverrideTime) {
+                this.userOverrideTime = data.userOverrideTime;
+                this.time = data.userOverrideTime;
+            }
         }
     }
 
@@ -506,8 +521,13 @@ window.Cropper = class Cropper {
         input.select();
 
         const close = () => {
-             if (input.value === '') this.time = this.originalTime || '';
-             else this.time = input.value;
+             if (input.value === '' || input.value === this.originalTime) {
+                 this.userOverrideTime = '';
+                 this.time = this.originalTime || '';
+             } else {
+                 this.userOverrideTime = input.value;
+                 this.time = input.value;
+             }
 
             if(document.body.contains(input)) document.body.removeChild(input);
             this.render();
