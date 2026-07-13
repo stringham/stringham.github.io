@@ -1,8 +1,20 @@
+"use strict";
+
 class Cropper {
-    constructor(file, border, timestamp, parent, onDelete, onSelect) {
+    /**
+     * @param {File} file - The image file
+     * @param {Object} settings - { border, timestamp, useBrightness }
+     * @param {HTMLElement} parent - The DOM element to append to
+     * @param {Function} onDelete - Callback when deleted
+     * @param {Function} onSelect - Callback when selected
+     */
+    constructor(file, settings, parent, onDelete, onSelect) {
         this.onDelete = onDelete;
         this.onSelect = onSelect;
         this.fileName = file.name;
+
+        // Settings injection (no global access)
+        this.settings = { ...settings };
 
         // --- UI Setup ---
         this.container = document.createElement('div');
@@ -75,8 +87,8 @@ class Cropper {
         this.offset = { x: 0, y: 0 };
         this.imgSize = 0;
         this.maxImgSize = 0;
-        this.border = parseInt(border) || 20;
-        this.timestamp = timestamp;
+
+        // Use local settings instead of parsing global inputs
         this.time = '';
         this.exifOrientation = 1;
         this.shouldRotate = getComputedStyle(document.body)['imageOrientation'] !== 'from-image';
@@ -90,8 +102,8 @@ class Cropper {
             this.imgSize = Math.min(this.width, this.height);
             this.maxImgSize = this.imgSize;
             try {
-                this.time = await getTime(this.img, this.name);
-                this.exifOrientation = await getExifOrientation(this.img);
+                this.time = await Utils.getTime(this.img, this.name);
+                this.exifOrientation = await Utils.getExifOrientation(this.img);
             } finally {
                 this.load();
                 this.render();
@@ -100,6 +112,12 @@ class Cropper {
 
         this.img.src = this.url;
         this.attachListeners();
+    }
+
+    // Public method to update settings dynamically
+    updateSettings(newSettings) {
+        this.settings = { ...this.settings, ...newSettings };
+        this.render();
     }
 
     attachListeners() {
@@ -198,7 +216,8 @@ class Cropper {
     }
 
     nudge(dx, dy) {
-        const scale = (this.size - 2 * this.border) / this.imgSize;
+        const border = this.settings.border;
+        const scale = (this.size - 2 * border) / this.imgSize;
         this.position.x += dx / scale;
         this.position.y += dy / scale;
         this.clamp();
@@ -214,11 +233,15 @@ class Cropper {
     getBlob(useFourBySix) {
         const maxSize = 1200;
         const canvas = document.createElement('canvas');
-        const border = this.border * this.imgSize / this.size;
+
+        // Use local settings
+        const borderVal = parseInt(this.settings.border) || 20;
+
+        const border = borderVal * this.imgSize / this.size;
         const finalSize = Math.min(maxSize, this.imgSize + 2 * border);
-        const finalBorder = finalSize * this.border / this.size;
+        const finalBorder = finalSize * borderVal / this.size;
         const finalImageSize = finalSize - finalBorder * 2;
-        const scale = finalBorder / this.border;
+        const scale = finalBorder / borderVal;
 
         canvas.width = useFourBySix ? finalSize * 3 / 2 : finalSize;
         canvas.height = finalSize;
@@ -261,7 +284,7 @@ class Cropper {
         x = Math.min(this.width - this.imgSize, Math.max(0, x));
         y = Math.min(this.height - this.imgSize, Math.max(0, y));
 
-        if (manager.useBrightness) {
+        if (this.settings.useBrightness) {
             ctx.filter = 'brightness(1.15)';
         }
 
@@ -290,7 +313,7 @@ class Cropper {
         ctx.filter = 'none';
         ctx.restore();
 
-        if (this.timestamp) {
+        if (this.settings.timestamp) {
             this.drawTimestamp(ctx, finalSize, scale);
         }
         return new Promise((resolve) => {
@@ -300,13 +323,8 @@ class Cropper {
         });
     }
 
-    setBorder(border) {
-        this.border = parseInt(border) || 20;
-        this.render();
-    }
-
     setTimestamp(timestamp) {
-        this.timestamp = timestamp;
+        this.settings.timestamp = timestamp;
         this.render();
     }
 
@@ -337,6 +355,9 @@ class Cropper {
     render() {
         if (!this.width) return;
 
+        // Local copy of border
+        const border = parseInt(this.settings.border) || 20;
+
         this.ctx.save();
         this.ctx.clearRect(0, 0, this.size, this.size);
 
@@ -352,30 +373,29 @@ class Cropper {
         x = Math.min(this.width - this.imgSize, Math.max(0, x));
         y = Math.min(this.height - this.imgSize, Math.max(0, y));
 
-        if (typeof manager !== 'undefined' && manager.useBrightness) {
+        if (this.settings.useBrightness) {
             this.ctx.filter = 'brightness(1.15)';
         }
 
         this.rotate(this.ctx, this.size, this.size);
 
-        this.ctx.drawImage(this.img, x, y, this.imgSize, this.imgSize, this.border, this.border, this.size - this.border * 2, this.size - this.border * 2);
+        this.ctx.drawImage(this.img, x, y, this.imgSize, this.imgSize, border, border, this.size - border * 2, this.size - border * 2);
 
         this.ctx.filter = 'none'; // Reset filter
         this.ctx.restore();
 
         if (this.isSelected || this.isHovered || this.dragging) {
-            this.drawGrid();
+            this.drawGrid(border);
         }
 
-        if (this.timestamp) {
+        if (this.settings.timestamp) {
             this.drawTimestamp(this.ctx, this.size, 1);
         }
     }
 
-    drawGrid() {
+    drawGrid(border) {
         const ctx = this.ctx;
-        const b = this.border;
-        const s = this.size - 2 * b;
+        const s = this.size - 2 * border;
 
         ctx.save();
         ctx.beginPath();
@@ -383,15 +403,15 @@ class Cropper {
         ctx.lineWidth = 1;
         ctx.setLineDash([5, 3]);
 
-        ctx.moveTo(b + s / 3, b);
-        ctx.lineTo(b + s / 3, b + s);
-        ctx.moveTo(b + 2 * s / 3, b);
-        ctx.lineTo(b + 2 * s / 3, b + s);
+        ctx.moveTo(border + s / 3, border);
+        ctx.lineTo(border + s / 3, border + s);
+        ctx.moveTo(border + 2 * s / 3, border);
+        ctx.lineTo(border + 2 * s / 3, border + s);
 
-        ctx.moveTo(b, b + s / 3);
-        ctx.lineTo(b + s, b + s / 3);
-        ctx.moveTo(b, b + 2 * s / 3);
-        ctx.lineTo(b + s, b + 2 * s / 3);
+        ctx.moveTo(border, border + s / 3);
+        ctx.lineTo(border + s, border + s / 3);
+        ctx.moveTo(border, border + 2 * s / 3);
+        ctx.lineTo(border + s, border + 2 * s / 3);
 
         ctx.shadowColor = "rgba(0,0,0,0.5)";
         ctx.shadowBlur = 2;
@@ -401,6 +421,8 @@ class Cropper {
     }
 
     drawTimestamp(ctx, size, scale) {
+        const border = parseInt(this.settings.border) || 20;
+
         ctx.save();
         ctx.globalAlpha = 0.5;
         ctx.shadowColor = "rgba(0,0,0,0.5)";
@@ -412,8 +434,8 @@ class Cropper {
         const textWidth = metrics.width;
         const padding = 8 * scale;
 
-        const x = size - this.border * scale - textWidth - padding;
-        const y = size - this.border * scale - padding;
+        const x = size - border * scale - textWidth - padding;
+        const y = size - border * scale - padding;
 
         ctx.fillText(this.time, x, y);
         ctx.restore();
@@ -465,7 +487,8 @@ class Cropper {
     }
 
     handleDragMove(clientX, clientY) {
-        const scale = this.imgSize / (this.size - 2 * this.border);
+        const border = this.settings.border;
+        const scale = this.imgSize / (this.size - 2 * border);
         this.offset = {
             x: scale * (this.anchor.x - clientX),
             y: scale * (this.anchor.y - clientY)
@@ -538,19 +561,58 @@ class Manager {
         this.cropperContainer = document.getElementById('cropper-grid');
         this.croppers = [];
         this.selectedCropper = null;
-        this.useFourBySix = true;
-        this.useBrightness = false;
+
+        // --- State Initialization ---
+        // We bind to DOM elements here, making Manager the source of truth
+        this.ui = {
+            border: document.getElementById('bordersize'),
+            timestamp: document.getElementById('timestamp'),
+            fourBySix: document.getElementById('four-by-six'),
+            brighten: document.getElementById('brighten'),
+            select: document.getElementById('select'),
+            count: document.getElementById('photo-count'),
+            saveBtn: document.getElementById('save')
+        };
+
+        this.settings = {
+            border: parseInt(this.ui.border.value) || 20,
+            timestamp: this.ui.timestamp.checked,
+            useBrightness: this.ui.brighten.checked,
+            useFourBySix: this.ui.fourBySix.checked
+        };
 
         this.setupDragDrop();
         this.setupKeyboard();
         this.setupGlobalClick();
+        this.setupListeners();
+    }
+
+    setupListeners() {
+        // settings changes
+        this.ui.border.addEventListener('change', () => this.updateSetting('border', parseInt(this.ui.border.value) || 0));
+        this.ui.timestamp.addEventListener('change', () => this.updateSetting('timestamp', this.ui.timestamp.checked));
+        this.ui.brighten.addEventListener('change', () => this.updateSetting('useBrightness', this.ui.brighten.checked));
+        this.ui.fourBySix.addEventListener('change', () => this.updateSetting('useFourBySix', this.ui.fourBySix.checked));
+
+        // File input
+        this.ui.select.addEventListener('change', (e) => {
+            for(let i=0; i < this.ui.select.files.length; i++) {
+                this.addFile(this.ui.select.files[i]);
+            }
+            this.ui.select.value = '';
+        });
+    }
+
+    updateSetting(key, value) {
+        this.settings[key] = value;
+        // Propagate to all croppers
+        this.croppers.forEach(c => c.updateSettings({ [key]: value }));
     }
 
     updateCount() {
-        const countEl = document.getElementById('photo-count');
         const count = this.croppers.length;
-        if(countEl) {
-            countEl.innerText = `${count} Photo${count !== 1 ? 's' : ''}`;
+        if(this.ui.count) {
+            this.ui.count.innerText = `${count} Photo${count !== 1 ? 's' : ''}`;
         }
     }
 
@@ -569,7 +631,8 @@ class Manager {
             this.selectedCropper = cropperInstance;
         };
 
-        const cropper = new Cropper(file, size.value, timestamp.checked, this.cropperContainer, onDelete, onSelect);
+        // Pass the settings snapshot to the new cropper
+        const cropper = new Cropper(file, this.settings, this.cropperContainer, onDelete, onSelect);
         this.croppers.push(cropper);
         this.updateCount();
     }
@@ -651,13 +714,12 @@ class Manager {
             return;
         }
 
-        const saveBtn = document.getElementById('save');
-        const originalText = saveBtn.innerText;
-        saveBtn.innerText = "Zipping...";
-        saveBtn.disabled = true;
+        const originalText = this.ui.saveBtn.innerText;
+        this.ui.saveBtn.innerText = "Zipping...";
+        this.ui.saveBtn.disabled = true;
 
         try {
-            const blobs = await Promise.all(this.croppers.map(cropper => cropper.getBlob(this.useFourBySix)));
+            const blobs = await Promise.all(this.croppers.map(cropper => cropper.getBlob(this.settings.useFourBySix)));
             const zip = new JSZip();
 
             blobs.forEach(({ name, blob }) => {
@@ -670,92 +732,62 @@ class Manager {
             console.error(e);
             alert("Error saving zip");
         } finally {
-            saveBtn.innerText = originalText;
-            saveBtn.disabled = false;
+            this.ui.saveBtn.innerText = originalText;
+            this.ui.saveBtn.disabled = false;
         }
     }
 }
 
-// Helpers
-const getExifOrientation = async (img) => {
-    return new Promise(resolve => {
-        EXIF.getData(img, function () {
-            resolve(EXIF.getTag(this, 'Orientation') || 1);
+// Helpers Namespace
+const Utils = {
+    getExifOrientation: async (img) => {
+        return new Promise(resolve => {
+            EXIF.getData(img, function () {
+                resolve(EXIF.getTag(this, 'Orientation') || 1);
+            });
         });
-    });
-};
+    },
 
-const getTime = async (img, name) => {
-    const getFromName = (name) => {
-        const match = name.match(/[^\d](20[0-2]\d)([0-1]\d)([0-3]\d)/);
-        if (match) {
-            const [, year, month, day] = match;
-            return `${month.replace(/^0+/, '')}/${day.replace(/^0+/, '')}/${year}`;
-        }
-        return '';
-    };
-
-    const timeFromName = getFromName(name);
-    if (timeFromName) {
-        return timeFromName;
-    }
-
-    return new Promise(resolve => {
-        EXIF.getData(img, function () {
-            try {
-                const created = EXIF.getTag(this, 'DateTimeOriginal');
-                if (!created) {
-                    resolve('');
-                } else {
-                    const [year, month, day] = created.split(' ')[0].split(':');
-                    resolve(`${month.replace(/^0+/, '')}/${day.replace(/^0+/, '')}/${year}`);
-                }
-            } catch (e) {
-                resolve('');
+    getTime: async (img, name) => {
+        const getFromName = (name) => {
+            const match = name.match(/[^\d](20[0-2]\d)([0-1]\d)([0-3]\d)/);
+            if (match) {
+                const [, year, month, day] = match;
+                return `${parseInt(month, 10)}/${parseInt(day, 10)}/${year}`;
             }
+            return '';
+        };
+
+        // 1. Try EXIF data first to get the correct local snapshot time
+        const exifTime = await new Promise(resolve => {
+            EXIF.getData(img, function () {
+                try {
+                    const created = EXIF.getTag(this, 'DateTimeOriginal');
+                    if (!created) {
+                        resolve('');
+                    } else {
+                        // explicitly split the date part cleanly without constructing arbitrary timestamps that roll timezone shifts
+                        const datePart = created.split(' ')[0];
+                        const [year, month, day] = datePart.split(':');
+                        resolve(`${parseInt(month, 10)}/${parseInt(day, 10)}/${year}`);
+                    }
+                } catch (e) {
+                    resolve('');
+                }
+            });
         });
-    });
+
+        if (exifTime) {
+            return exifTime;
+        }
+
+        // 2. Fall back to filename parsing only if EXIF metadata is completely missing
+        return getFromName(name);
+    }
 };
 
-var manager;
-var size;
-var timestamp;
-var fourBySix;
-var brighten;
-
+// Initialize App
 document.addEventListener("DOMContentLoaded", function(event) {
-	var select = document.getElementById('select');
-	size = document.getElementById('bordersize');
-	timestamp = document.getElementById('timestamp');
-	fourBySix = document.getElementById('four-by-six');
-    brighten = document.getElementById('brighten');
-
-	manager = new Manager();
-
-	size.addEventListener('change', function(e) {
-		manager.croppers.forEach(function(c) {
-			c.setBorder(size.value);
-		})
-	})
-
-	timestamp.addEventListener('change', () => {
-		manager.croppers.forEach(c => c.setTimestamp(timestamp.checked))
-	});
-
-    fourBySix.addEventListener('change', () => {
-		manager.useFourBySix = fourBySix.checked;
-	});
-
-    brighten.addEventListener('change', () => {
-        manager.useBrightness = brighten.checked;
-        // Trigger live preview update
-        manager.croppers.forEach(c => c.render());
-    });
-
-	select.addEventListener('change', function(e){
-		for(var i=0; i<select.files.length; i++) {
-			manager.addFile(select.files[i]);
-		}
-        select.value = '';
-	})
+    // No globals exported to window
+    new Manager();
 });
