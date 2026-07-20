@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0"
+        >
+        <title>Custom QR Code Generator</title>
+        <!-- Import qrcode-generator for the matrix data -->
+        <script src="./lib/qrcode.min.js"></script>
+        <!-- Import simplex-noise for organic color clustering -->
+        <script src="./lib/simplex-noise.min.js"></script>
+        <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+            margin: 0;
+        }
+        .container {
+            background-color: #1e1e1e;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+        .input-group {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        input[type="text"] {
+            padding: 12px;
+            width: 250px;
+            border: 1px solid #444;
+            border-radius: 6px;
+            background: #2a2a2a;
+            color: white;
+            font-size: 16px;
+        }
+        select {
+            padding: 12px;
+            border: 1px solid #444;
+            border-radius: 6px;
+            background: #2a2a2a;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            outline: none;
+        }
+        button {
+            padding: 12px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 6px;
+            background-color: #50c5cc;
+            color: #000;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background-color: #fde48b;
+            color: #000;
+        }
+        .btn-download {
+            background-color: #a772ab;
+            color: #fff;
+        }
+        .btn-download:hover {
+            background-color: #c47998;
+        }
+        .slider-controls {
+            background: #2a2a2a;
+            padding: 15px 20px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            font-size: 14px;
+            font-weight: bold;
+            color: #ccc;
+            margin-bottom: 30px;
+        }
+        input[type="range"] {
+            width: 150px;
+            cursor: pointer;
+        }
+        canvas {
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            max-width: 100%;
+        }
+    </style>
+    </head>
+    <body>
+
+        <div class="container">
+            <h2>QR Code Stylizer</h2>
+            <div class="input-group">
+                <input
+                    type="text"
+                    id="qrText"
+                    value="https://q.doodledisc.com/"
+                    placeholder="Enter URL or text"
+                >
+
+                <select
+                    id="shapeSelect"
+                    onchange="generateQR()"
+                >
+                    <option value="circle">Circles</option>
+                    <option value="rounded-square">Rounded Squares</option>
+                </select>
+
+                <button onclick="generateNewPattern()">Generate</button>
+                <button
+                    class="btn-download"
+                    onclick="downloadQR()"
+                >
+                    Download High-Res
+                </button>
+            </div>
+
+            <div class="slider-controls">
+                <span>Random</span>
+                <input
+                    type="range"
+                    id="clusterSlider"
+                    min="1"
+                    max="100"
+                    value="93"
+                    oninput="generateQR()"
+                >
+                <span>Clustered</span>
+            </div>
+
+            <canvas id="qrCanvas"></canvas>
+        </div>
+
+        <script src="./js/qr.js"></script>
+    </body>
+</html>
