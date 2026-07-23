@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0"
+        >
+        <title>Doodle Disc Catalog</title>
+        <!-- Global site tag (gtag.js) - Google Analytics -->
+        <script async src="https://www.googletagmanager.com/gtag/js?id=UA-33833540-1"></script>
+        <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+
+        gtag('config', 'UA-33833540-1', {
+            page_title: document.title,
+            page_path: window.location.pathname
+        });
+        </script>
+        <style>
+        /* --- Base & Responsive Styles --- */
+        :root {
+            --primary: #2563eb;
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            --text: #0f172a;
+            --border: #cbd5e1;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 16px;
+            line-height: 1.3;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            background-color: var(--surface);
+            padding: 16px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            margin-bottom: 16px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+
+        h1 { margin: 0; font-size: 1.25rem; }
+
+        .controls {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+        }
+
+        input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+            margin: 0;
+        }
+
+        input[type="checkbox"]:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .disabled-text {
+            opacity: 0.5;
+        }
+
+        .print-btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .print-btn:hover { background-color: #1d4ed8; }
+
+        /* --- Catalog Grid (Default with Pictures) --- */
+        .catalog {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 12px;
+        }
+
+        .disc-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 10px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Make number and name behave as links */
+        a.disc-number, a.disc-name {
+            text-decoration: none;
+            color: var(--text);
+            transition: color 0.2s;
+        }
+
+        a.disc-number {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--primary);
+            margin-bottom: 4px;
+        }
+
+        a.disc-name {
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        a.disc-number:hover, a.disc-name:hover {
+            text-decoration: underline;
+            color: #1d4ed8;
+        }
+
+        .disc-pic {
+            margin-top: 8px;
+            width: 100%;
+            height: auto;
+            border-radius: 4px;
+            aspect-ratio: 1 / 1;
+            object-fit: contain;
+            border: 1px solid var(--border);
+            background-color: var(--surface);
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .disc-pic:hover {
+            transform: scale(1.03);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        /* --- Modal / Lightbox Styles --- */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(4px);
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            max-width: 90%;
+            max-height: 75vh;
+            border-radius: 8px;
+            object-fit: contain;
+            background-color: white;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            color: #f8fafc;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            user-select: none;
+            transition: color 0.2s;
+        }
+
+        .close-modal:hover {
+            color: #94a3b8;
+        }
+
+        #modalCaption {
+            margin-top: 16px;
+            color: white;
+            font-size: 1.25rem;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        #modalLink {
+            margin-top: 8px;
+            color: #93c5fd; /* light blue */
+            text-decoration: none;
+            font-size: 1rem;
+            font-weight: 500;
+            display: none; /* hidden by default, toggled in JS */
+        }
+
+        #modalLink:hover {
+            text-decoration: underline;
+            color: #bfdbfe;
+        }
+
+        /* --- Toggling & Compact Layout Overrides --- */
+        .catalog.hide-names .disc-name { display: none; }
+        .catalog.hide-pics .disc-pic { display: none; }
+
+        .catalog.hide-pics {
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 8px;
+        }
+
+        .catalog.hide-pics .disc-card {
+            flex-direction: row;
+            justify-content: flex-start;
+            text-align: left;
+            padding: 6px 10px;
+            gap: 8px;
+        }
+
+        .catalog.hide-pics .disc-number {
+            margin-bottom: 0;
+            font-size: 1rem;
+        }
+
+        /* --- Print Specific Styles --- */
+        @media print {
+            body {
+                background-color: white;
+                padding: 0;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+
+            a.disc-number, a.disc-name {
+                text-decoration: none !important;
+            }
+
+            .catalog {
+                grid-template-columns: repeat(7, 1fr);
+                gap: 8px;
+            }
+
+            .catalog.hide-pics {
+                grid-template-columns: repeat(7, 1fr);
+                gap: 4px;
+            }
+
+            .disc-card {
+                break-inside: avoid;
+                page-break-inside: avoid;
+                border-color: #94a3b8;
+            }
+
+            .catalog.hide-pics .disc-card {
+                padding: 4px 8px;
+            }
+
+            .disc-number {
+                color: black !important;
+            }
+        }
+    </style>
+    </head>
+    <body>
+
+        <div class="container">
+            <header class="no-print">
+                <h1>Doodle Disc Catalog</h1>
+                <div class="controls">
+                    <label
+                        class="control-group"
+                        id="nameLabel"
+                    >
+                        <input
+                            type="checkbox"
+                            id="toggleName"
+                            checked
+                        >
+                        Show Names
+                    </label>
+                    <label
+                        class="control-group"
+                        id="picLabel"
+                    >
+                        <input
+                            type="checkbox"
+                            id="togglePic"
+                        >
+                        Show Pictures
+                    </label>
+                    <button
+                        class="print-btn"
+                        onclick="window.print()"
+                    >
+                        🖨️ Print
+                    </button>
+                </div>
+            </header>
+
+            <main
+                id="catalog"
+                class="catalog hide-pics"
+            ></main>
+        </div>
+
+        <!-- Lightbox Modal -->
+        <div id="imageModal" class="modal no-print">
+            <span class="close-modal">&times;</span>
+            <img class="modal-content" id="modalImage">
+            <div id="modalCaption"></div>
+            <a id="modalLink" target="_blank" rel="noopener noreferrer">View Model &rarr;</a>
+        </div>
+
+        <script src="./list.js"></script>
+
+        <script>
+        const catalogContainer = document.getElementById('catalog');
+        const toggleNameBtn = document.getElementById('toggleName');
+        const togglePicBtn = document.getElementById('togglePic');
+        const nameLabel = document.getElementById('nameLabel');
+        const picLabel = document.getElementById('picLabel');
+
+        // Modal elements
+        const modal = document.getElementById('imageModal');
+        const modalImg = document.getElementById('modalImage');
+        const modalCaption = document.getElementById('modalCaption');
+        const modalLink = document.getElementById('modalLink');
+        const closeModalBtn = document.querySelector('.close-modal');
+
+        function renderCatalog() {
+            catalogContainer.innerHTML = '';
+            stencilsData.forEach(disc => {
+                const displayNum = parseInt(disc.number, 10);
+
+                const card = document.createElement('div');
+                card.className = 'disc-card';
+
+                // We inject the URL into the href attributes and a data-url on the image
+                card.innerHTML = `
+                    <a href="${disc.url || '#'}" target="_blank" class="disc-number">#${displayNum}</a>
+                    <a href="${disc.url || '#'}" target="_blank" class="disc-name">${disc.name}</a>
+                    <img class="disc-pic" src="${disc.image}" alt="${disc.name} (Disc #${displayNum})" data-url="${disc.url || ''}">
+                `;
+                catalogContainer.appendChild(card);
+            });
+        }
+
+        function updateDisplay() {
+            const showName = toggleNameBtn.checked;
+            const showPic = togglePicBtn.checked;
+
+            if (!showName) {
+                togglePicBtn.disabled = true;
+                picLabel.classList.add('disabled-text');
+            } else {
+                togglePicBtn.disabled = false;
+                picLabel.classList.remove('disabled-text');
+            }
+
+            if (!showPic) {
+                toggleNameBtn.disabled = true;
+                nameLabel.classList.add('disabled-text');
+            } else {
+                toggleNameBtn.disabled = false;
+                nameLabel.classList.remove('disabled-text');
+            }
+
+            if (showName) {
+                catalogContainer.classList.remove('hide-names');
+            } else {
+                catalogContainer.classList.add('hide-names');
+            }
+
+            if (showPic) {
+                catalogContainer.classList.remove('hide-pics');
+            } else {
+                catalogContainer.classList.add('hide-pics');
+            }
+        }
+
+        // --- Modal Logic ---
+
+        function openModal(imageSrc, captionText, url) {
+            modalImg.src = imageSrc;
+            modalCaption.textContent = captionText;
+
+            if (url) {
+                modalLink.href = url;
+                modalLink.style.display = 'inline-block';
+            } else {
+                modalLink.style.display = 'none';
+            }
+
+            modal.classList.add('show');
+        }
+
+        function closeModal() {
+            modal.classList.remove('show');
+            setTimeout(() => { modalImg.src = ''; }, 200);
+        }
+
+        // Use event delegation to handle clicks on dynamically generated images
+        catalogContainer.addEventListener('click', function(e) {
+            if (e.target.classList.contains('disc-pic')) {
+                const src = e.target.src;
+                const caption = e.target.alt;
+                const url = e.target.getAttribute('data-url');
+                openModal(src, caption, url);
+            }
+        });
+
+        closeModalBtn.addEventListener('click', closeModal);
+
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && modal.classList.contains('show')) {
+                closeModal();
+            }
+        });
+
+        // --- Initialization ---
+
+        toggleNameBtn.addEventListener('change', updateDisplay);
+        togglePicBtn.addEventListener('change', updateDisplay);
+
+        renderCatalog();
+        updateDisplay();
+        </script>
+    </body>
+</html>
