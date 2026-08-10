@@ -935,4 +935,40 @@ const stencilsData = [
         image: "./images/156-llama.webp",
         url: "https://makerworld.com/en/models/3046429",
     },
+    {
+        number: "157",
+        name: "Mongo",
+        image: "./images/157-mongo.webp",
+        url: "https://makerworld.com/en/models/3113880",
+    },
+    {
+        number: "158",
+        name: "Shut Up And Take My Money",
+        image: "./images/158-shut-up-and-take-my-money.webp",
+        url: "https://makerworld.com/en/models/3117636",
+    },
+    {
+        number: "159",
+        name: "Arthur",
+        image: "./images/159-arthur.webp",
+        url: "https://makerworld.com/en/models/3129069",
+    },
+    {
+        number: "160",
+        name: "Pippi Longstocking",
+        image: "./images/160-pippi-longstocking.webp",
+        url: "https://makerworld.com/en/models/3132886",
+    },
+    {
+        number: "161",
+        name: "Muffin",
+        image: "./images/161-muffin.webp",
+        url: "https://makerworld.com/en/models/3136703",
+    },
+    {
+        number: "162",
+        name: "Cheer Bear",
+        image: "./images/162-cheer-bear.webp",
+        url: "https://makerworld.com/en/models/3140279",
+    }
 ];
